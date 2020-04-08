@@ -18,6 +18,7 @@ namespace SIFAC {
         public Boolean hasSpawned;
         public NoteAccuracy result;
         public Boolean hasResolved;
+        public Texture2D texture;
         public Note(float pos, int lan, Boolean multiple, Boolean hold, Boolean release, float releaseNoteTime, float parentNoteTime, Boolean star) {
             position = pos;
             lane = lan;
@@ -60,7 +61,10 @@ namespace SIFAC {
         Vector2[] hitMarkerPositions = new Vector2[9];
         float[] xOffsets = new float[4];
         float[] yOffsets = new float[4];
+        float radiusH; // This is set in Initialize()
+        float radiusV; // This is set in Initialize()
         Vector2 noteSpawnPosition;
+        Boolean lastMultiWasBlue = false; // Used to toggle between orange and blue multi notes
 
         KeyboardState previousState;
 
@@ -71,6 +75,13 @@ namespace SIFAC {
         Note[] beatmap;
 
         SoundEffect[] hitSoundEffects = new SoundEffect[4]; // hitSoundEffects[0] is perfect, 1 is great, 2 is good, 3 is bad
+
+        int perfects = 0;
+        int greats = 0;
+        int goods = 0;
+        int bads = 0;
+        int misses = 0;
+
 
        /* CONFIG */
         float noteSpeed = 1f; // Note speed, represented by seconds from spawn to note hit position.
@@ -86,7 +97,7 @@ namespace SIFAC {
         double timeOffset = -0.25; // If too large, notes will be too early. If too small, notes will be too late.
 
         // Autoplay, for debug purposes
-        Boolean autoplay = true;
+        Boolean autoplay = false;
         /* END CONFIG */
 
         public SIFAC() {
@@ -104,33 +115,32 @@ namespace SIFAC {
             // graphics.PreferredBackBufferWidth = 1920;
             // graphics.PreferredBackBufferHeight = 1080;
             // graphics.IsFullScreen = true;
+
             graphics.PreferredBackBufferWidth = 1280;
             graphics.PreferredBackBufferHeight = 720;
             graphics.IsFullScreen = false;
+
             graphics.ApplyChanges();
 
-            // TODO: Fine-tune hit marker positions
-            xOffsets[0] = graphics.PreferredBackBufferWidth / 2.4615f; // L4 and R4
-            xOffsets[1] = graphics.PreferredBackBufferWidth / 2.8235f; // L3 and R3
-            xOffsets[2] = graphics.PreferredBackBufferWidth / 3.84f; // L2 and R2
-            xOffsets[3] = graphics.PreferredBackBufferWidth / 6.8571f; // L1 and R1
+            radiusH = graphics.PreferredBackBufferWidth / 2.4615f;
+            radiusV = graphics.PreferredBackBufferWidth / 2.4615f;
 
-            yOffsets[0] = graphics.PreferredBackBufferHeight / 1.44f; // L4 and R4
-            yOffsets[1] = graphics.PreferredBackBufferHeight / 2.16f; // L3 and R3
-            yOffsets[2] = graphics.PreferredBackBufferHeight / 4.32f; // L2 and R2
-            yOffsets[3] = graphics.PreferredBackBufferHeight / 21.6f; // L1 and R1
+            noteSpawnPosition = new Vector2(graphics.PreferredBackBufferWidth / 2, graphics.PreferredBackBufferHeight / 2 - graphics.PreferredBackBufferHeight / 1.44f);
 
-            hitMarkerPositions[0] = new Vector2(graphics.PreferredBackBufferWidth / 2 - xOffsets[0], graphics.PreferredBackBufferHeight / 2 - yOffsets[0]);
-            hitMarkerPositions[1] = new Vector2(graphics.PreferredBackBufferWidth / 2 - xOffsets[1], graphics.PreferredBackBufferHeight / 2 - yOffsets[1]);
-            hitMarkerPositions[2] = new Vector2(graphics.PreferredBackBufferWidth / 2 - xOffsets[2], graphics.PreferredBackBufferHeight / 2 - yOffsets[2]);
-            hitMarkerPositions[3] = new Vector2(graphics.PreferredBackBufferWidth / 2 - xOffsets[3], graphics.PreferredBackBufferHeight / 2 - yOffsets[3]);
-            hitMarkerPositions[4] = new Vector2(graphics.PreferredBackBufferWidth / 2, graphics.PreferredBackBufferHeight / 2);
-            hitMarkerPositions[5] = new Vector2(graphics.PreferredBackBufferWidth / 2 + xOffsets[3], graphics.PreferredBackBufferHeight / 2 - yOffsets[3]);
-            hitMarkerPositions[6] = new Vector2(graphics.PreferredBackBufferWidth / 2 + xOffsets[2], graphics.PreferredBackBufferHeight / 2 - yOffsets[2]);
-            hitMarkerPositions[7] = new Vector2(graphics.PreferredBackBufferWidth / 2 + xOffsets[1], graphics.PreferredBackBufferHeight / 2 - yOffsets[1]);
-            hitMarkerPositions[8] = new Vector2(graphics.PreferredBackBufferWidth / 2 + xOffsets[0], graphics.PreferredBackBufferHeight / 2 - yOffsets[0]);
+            for (int i = 0; i < 9; i++) {
+                float x = (float)(noteSpawnPosition.X + radiusH * Math.Cos((i / 8f) * Math.PI));
+                float y = (float)(noteSpawnPosition.Y + radiusV * (Math.Sin((i / 8f) * Math.PI)));
+                Console.WriteLine((i / 8) * Math.PI);
+                hitMarkerPositions[hitMarkerPositions.Length - i - 1] = new Vector2(x, y);
+            }
 
-            noteSpawnPosition = new Vector2(graphics.PreferredBackBufferWidth / 2, graphics.PreferredBackBufferHeight / 2 - yOffsets[0]);
+            for (int i = 0; i < 4; i++) {
+                xOffsets[i] = hitMarkerPositions[8 - i].X - noteSpawnPosition.X; // xOffsets[0] corresponds to L4 and R4. xOffsets[3] corresponds to L1 and R1
+            }
+
+            for (int i = 0; i < 4; i++) {
+                yOffsets[i] = hitMarkerPositions[8 - i].Y - noteSpawnPosition.Y; // xOffsets[0] corresponds to L4 and R4. xOffsets[3] corresponds to L1 and R1
+            }
 
             base.Initialize();
             previousState = Keyboard.GetState();
@@ -196,6 +206,7 @@ namespace SIFAC {
                 }
                 beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]));
             }
+            Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
         }
 
         /// <summary>
@@ -308,7 +319,16 @@ namespace SIFAC {
                     Console.WriteLine("Miss");
                     note.result = NoteAccuracy.Miss;
                     note.hasResolved = true;
+                    misses++;
                 }
+            }
+
+            if (bgVideoPlayer.State == MediaState.Stopped) {
+                Console.WriteLine("Perfect: " + perfects);
+                Console.WriteLine("Great: " + greats);
+                Console.WriteLine("Good: " + goods);
+                Console.WriteLine("Bad: " + bads);
+                Console.WriteLine("Miss: " + misses);
             }
 
             base.Update(gameTime);
@@ -342,20 +362,43 @@ namespace SIFAC {
             }
 
             double currentVideoPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
-            // Console.WriteLine(currentVideoPosition);
+            Note previousNote = new Note(-1, -1, false, false, false, 0, 0, false);
             foreach (Note note in beatmap) {
                 if (note.position <= currentVideoPosition + noteSpeed && !note.hasResolved) {
                     float[] coordinates = calculateNoteCoordinates(currentVideoPosition, note);
                     float noteSize = 0.35f - (float)((note.position - currentVideoPosition)*0.15f);
-                    Texture2D texture = noteTexture;
 
-                    // TODO use orange hold note texture as appropriate
-                    if (note.isRelease & note.isMultiple) {
-                        texture = noteReleaseMultiBlueTexture;
-                    } else if (note.isMultiple) {
-                        texture = noteMultiBlueTexture;
-                    } else if (note.isRelease) {
-                        texture = noteReleaseTexture;
+                    // TODO figure out why orange and blue aren't working as expected
+                    if (note.texture == null) {
+                        if (note.isRelease & note.isMultiple) {
+                            if (lastMultiWasBlue) {
+                                note.texture = noteReleaseMultiOrangeTexture;
+                                if (previousNote.position != note.position) {
+                                    lastMultiWasBlue = false;
+                                }
+                            } else {
+                                note.texture = noteReleaseMultiBlueTexture;
+                                if (previousNote.position != note.position) {
+                                    lastMultiWasBlue = true;
+                                }
+                            }
+                        } else if (note.isMultiple) {
+                            if (lastMultiWasBlue) {
+                                note.texture = noteMultiOrangeTexture;
+                                if (previousNote.position != note.position) {
+                                    lastMultiWasBlue = false;
+                                }
+                            } else {
+                                note.texture = noteMultiBlueTexture;
+                                if (previousNote.position != note.position) {
+                                    lastMultiWasBlue = true;
+                                }
+                            }
+                        } else if (note.isRelease) {
+                            note.texture = noteReleaseTexture;
+                        } else {
+                            note.texture = noteTexture;
+                        }
                     }
 
                     // TODO hold note trails
@@ -377,17 +420,18 @@ namespace SIFAC {
                         }
                     }*/
 
-                    spriteBatch.Draw(texture,
+                    spriteBatch.Draw(note.texture,
                         new Vector2(coordinates[0], coordinates[1]),
                         null,
                         Color.White,
                         0f,
-                        new Vector2(texture.Width / 2, texture.Height / 2 - graphics.PreferredBackBufferHeight),
+                        new Vector2(note.texture.Width / 2, note.texture.Height / 2 - graphics.PreferredBackBufferHeight),
                         noteSize,
                         SpriteEffects.None,
                         0f);
                     note.hasSpawned = true;
                 }
+                previousNote = note;
             }
 
             // spriteBatch.Draw(noteTexture, notePosition, Color.White);
@@ -452,29 +496,29 @@ namespace SIFAC {
             // Determine the delta Y
             switch (lane) {
                 case 4: // C
-                    deltaY = yOffsets[0];
+                    deltaY = noteSpawnPosition.Y - hitMarkerPositions[4].Y;
                     break;
                 case 3: // L1
                 case 5: // R1
-                    deltaY = yOffsets[0] - yOffsets[3];
+                    deltaY = noteSpawnPosition.Y - hitMarkerPositions[3].Y;
                     break;
                 case 2: // L2
                 case 6: // R2
-                    deltaY = yOffsets[0] - yOffsets[2];
+                    deltaY = noteSpawnPosition.Y - hitMarkerPositions[2].Y;
                     break;
                 case 1: // L3
                 case 7: // R3
-                    deltaY = yOffsets[0] - yOffsets[1];
+                    deltaY = noteSpawnPosition.Y - hitMarkerPositions[1].Y;
                     break;
                 case 0: // L4
                 case 8: // R4
-                    deltaY = 0;
+                    deltaY = noteSpawnPosition.Y - hitMarkerPositions[0].Y;
                     break;
             }
 
-            deltaY -= 100;
+            deltaY += 100;
 
-            float yPixelSpeed = deltaY / noteSpeed;
+            float yPixelSpeed = -deltaY / noteSpeed;
             yCoord = hitMarkerPositions[lane].Y - (yPixelSpeed * timePosition);
 
             float[] result = { xCoord, yCoord };
@@ -545,24 +589,28 @@ namespace SIFAC {
                             hitSoundEffects[0].Play(0.2f, 0f, 0f);
                             note.result = NoteAccuracy.Perfect;
                             note.hasResolved = true;
+                            perfects++;
                             return NoteAccuracy.Perfect;
                         } else if (Math.Abs(diff) <= greatTolerance) {
                             Console.WriteLine("Great (early by " + diff + ")");
                             hitSoundEffects[1].Play(0.2f, 0f, 0f);
                             note.result = NoteAccuracy.Great;
                             note.hasResolved = true;
+                            greats++;
                             return NoteAccuracy.Great;
                         } else if (Math.Abs(diff) <= goodTolerance) {
                             Console.WriteLine("Good (early by " + diff + ")");
                             hitSoundEffects[2].Play(0.2f, 0f, 0f);
                             note.result = NoteAccuracy.Good;
                             note.hasResolved = true;
+                            goods++;
                             return NoteAccuracy.Good;
                         } else if (Math.Abs(diff) <= badTolerance) {
                             Console.WriteLine("Bad (early by " + diff + ")");
                             hitSoundEffects[3].Play(0.2f, 0f, 0f);
                             note.result = NoteAccuracy.Bad;
                             note.hasResolved = true;
+                            bads++;
                             return NoteAccuracy.Bad;
                         }
                     }

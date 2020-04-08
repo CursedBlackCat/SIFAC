@@ -46,6 +46,9 @@ namespace SIFAC {
     /// This is the main type for your game.
     /// </summary>
     public class SIFAC : Game {
+        GraphicsDeviceManager graphics;
+        SpriteBatch spriteBatch;
+
         Texture2D noteTexture;
         Texture2D noteMultiBlueTexture;
         Texture2D noteMultiOrangeTexture;
@@ -54,30 +57,37 @@ namespace SIFAC {
         Texture2D noteReleaseMultiOrangeTexture;
         Texture2D hitMarkerTexture;
 
-        GraphicsDeviceManager graphics;
-        SpriteBatch spriteBatch;
         Vector2[] hitMarkerPositions = new Vector2[9];
+        float[] xOffsets = new float[4];
+        float[] yOffsets = new float[4];
         Vector2 noteSpawnPosition;
+
         KeyboardState previousState;
+
         Video bgVideo;
         VideoPlayer bgVideoPlayer;
         Boolean playVideo = true;
+
         Note[] beatmap;
-        float[] xOffsets = new float[4];
-        float[] yOffsets = new float[4];
+
         SoundEffect[] hitSoundEffects = new SoundEffect[4]; // hitSoundEffects[0] is perfect, 1 is great, 2 is good, 3 is bad
 
+       /* CONFIG */
         float noteSpeed = 1f; // Note speed, represented by seconds from spawn to note hit position.
 
         // Timing tolerences, in seconds. Hitting a note at its time + or - each of these values gets the corresponding accuracy rating.
-        double perfectTolerance = 0.1;
-        double greatTolerance = 0.3;
-        double goodTolerance = 0.5;
+        double perfectTolerance = 0.2;
+        double greatTolerance = 0.4;
+        double goodTolerance = 0.6;
         double badTolerance = 1;
         double missTolerance = 1.5; // Not hitting a note after this much time elapses after its hit time will count as a miss
 
         // Timing offset setting, in seconds.
-        double timeOffset = -0.25; // If too large, notes too early. If too small, notes too late.
+        double timeOffset = -0.25; // If too large, notes will be too early. If too small, notes will be too late.
+
+        // Autoplay, for debug purposes
+        Boolean autoplay = true;
+        /* END CONFIG */
 
         public SIFAC() {
             graphics = new GraphicsDeviceManager(this);
@@ -91,7 +101,6 @@ namespace SIFAC {
         /// and initialize them as well.
         /// </summary>
         protected override void Initialize() {
-            // TODO: Add your initialization logic here
             // graphics.PreferredBackBufferWidth = 1920;
             // graphics.PreferredBackBufferHeight = 1080;
             // graphics.IsFullScreen = true;
@@ -135,7 +144,6 @@ namespace SIFAC {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // TODO: use this.Content to load your game content here
             noteTexture = Content.Load<Texture2D>("Note");
             noteMultiBlueTexture = Content.Load<Texture2D>("notes/Note_Multi_Blue");
             noteMultiOrangeTexture = Content.Load<Texture2D>("notes/Note_Multi_Orange");
@@ -204,14 +212,13 @@ namespace SIFAC {
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime) {
-            // TODO: Add your update logic here
             if (playVideo & bgVideoPlayer.State == MediaState.Stopped) {
                 bgVideoPlayer.Volume = 0.2f;
                 bgVideoPlayer.Play(bgVideo);
                 playVideo = false;
             }
+           
             var kstate = Keyboard.GetState();
-
             // Detect key down
             if (kstate.IsKeyDown(Keys.A) & !previousState.IsKeyDown(Keys.A)) {
                 judgeHit(0, true);
@@ -286,13 +293,14 @@ namespace SIFAC {
 
             foreach (Note note in beatmap) {
                 //AUTOPLAY CODE
-                if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset) {
-                    Console.WriteLine("Auto");
+                if (autoplay && !note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset) {
+                    // Console.WriteLine("Auto");
                     note.result = NoteAccuracy.Perfect;
                     hitSoundEffects[0].Play(0.2f, 0f, 0f);
                     note.hasResolved = true;
                 }
                 //END AUTOPLAY CODE
+
                 if (note.result != NoteAccuracy.None) {
                     note.hasResolved = true;
                 }
@@ -314,7 +322,6 @@ namespace SIFAC {
         protected override void Draw(GameTime gameTime) {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
             spriteBatch.Begin();
             spriteBatch.Draw(
                 bgVideoPlayer.GetTexture(),

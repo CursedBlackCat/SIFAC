@@ -34,6 +34,29 @@ namespace SIFAC {
         }
     }
 
+
+    public class PlayableSong {
+        // TODO start moving assets for the beatmap here
+        Video backgroundMv;
+        Note[] beatmap;
+
+        public PlayableSong(Video v, Note[] map) {
+            backgroundMv = v;
+            beatmap = map;
+        }
+    }
+
+    public enum GameState {
+        TitleScreen,
+        NesicaCheckScreen,
+        GroupSelectScreen,
+        SongSelectScreen, // Also handles difficulty selection
+        LivePreparationScreen,
+        LiveScreen,
+        ResultScreen,
+        GoodbyeScreen
+    }
+
     public enum NoteAccuracy {
         Perfect,
         Great,
@@ -50,6 +73,8 @@ namespace SIFAC {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
+        GameState currentGameState = GameState.LiveScreen;
+
         Texture2D noteTexture;
         Texture2D noteMultiBlueTexture;
         Texture2D noteMultiOrangeTexture;
@@ -57,6 +82,8 @@ namespace SIFAC {
         Texture2D noteReleaseMultiBlueTexture;
         Texture2D noteReleaseMultiOrangeTexture;
         Texture2D hitMarkerTexture;
+
+        SpriteFont defaultFont;
 
         Vector2[] hitMarkerPositions = new Vector2[9];
         float[] xOffsets = new float[4];
@@ -94,10 +121,12 @@ namespace SIFAC {
         double missTolerance = 1.5; // Not hitting a note after this much time elapses after its hit time will count as a miss
 
         // Timing offset setting, in seconds.
-        double timeOffset = -0.25; // If too large, notes will be too early. If too small, notes will be too late.
+        // Use a timeOffset value of -0.05 for playing and -0.25 for autoplay. These values aren't perfect.
+        // If too large, notes will be too early. If too small, notes will be too late.
+        double timeOffset = -0.25;     
 
         // Autoplay, for debug purposes
-        Boolean autoplay = false;
+        Boolean autoplay = true;
         /* END CONFIG */
 
         public SIFAC() {
@@ -112,13 +141,17 @@ namespace SIFAC {
         /// and initialize them as well.
         /// </summary>
         protected override void Initialize() {
-            // graphics.PreferredBackBufferWidth = 1920;
-            // graphics.PreferredBackBufferHeight = 1080;
-            // graphics.IsFullScreen = true;
+            /*
+            graphics.PreferredBackBufferWidth = 1920;
+            graphics.PreferredBackBufferHeight = 1080;
+            graphics.IsFullScreen = true;
+            */
 
+            ///*
             graphics.PreferredBackBufferWidth = 1280;
             graphics.PreferredBackBufferHeight = 720;
             graphics.IsFullScreen = false;
+            //*/
 
             graphics.ApplyChanges();
 
@@ -129,8 +162,7 @@ namespace SIFAC {
 
             for (int i = 0; i < 9; i++) {
                 float x = (float)(noteSpawnPosition.X + radiusH * Math.Cos((i / 8f) * Math.PI));
-                float y = (float)(noteSpawnPosition.Y + radiusV * (Math.Sin((i / 8f) * Math.PI)));
-                Console.WriteLine((i / 8) * Math.PI);
+                float y = (float)(noteSpawnPosition.Y + radiusV * Math.Sin((i / 8f) * Math.PI));
                 hitMarkerPositions[hitMarkerPositions.Length - i - 1] = new Vector2(x, y);
             }
 
@@ -154,14 +186,20 @@ namespace SIFAC {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            noteTexture = Content.Load<Texture2D>("Note");
+            // Load textures
+            noteTexture = Content.Load<Texture2D>("notes/Note");
             noteMultiBlueTexture = Content.Load<Texture2D>("notes/Note_Multi_Blue");
             noteMultiOrangeTexture = Content.Load<Texture2D>("notes/Note_Multi_Orange");
             noteReleaseTexture = Content.Load<Texture2D>("notes/Note_Hold_Release");
             noteReleaseMultiBlueTexture = Content.Load<Texture2D>("notes/Note_Hold_Release_Multi_Blue");
             noteReleaseMultiOrangeTexture = Content.Load<Texture2D>("notes/Note_Hold_Release_Multi_Orange");
-            hitMarkerTexture = Content.Load<Texture2D>("HitMarker");
-            bgVideo = Content.Load<Video>("believe_again");
+            hitMarkerTexture = Content.Load<Texture2D>("notes/HitMarker");
+
+            // Load fonts
+            defaultFont = Content.Load<SpriteFont>("fonts/DefaultFont");
+
+            // Load videos
+            bgVideo = Content.Load<Video>("beatmap_assets/Believe Again/video");
             bgVideoPlayer = new VideoPlayer();
 
             hitSoundEffects[0] = Content.Load<SoundEffect>("sounds/hit_perfect");
@@ -223,84 +261,136 @@ namespace SIFAC {
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime) {
+            base.Update(gameTime);
+
+            switch (currentGameState) {
+                case GameState.TitleScreen:
+                    UpdateTitleScreen(gameTime);
+                    break;
+                case GameState.NesicaCheckScreen:
+                    UpdateNesicaCheckScreen(gameTime);
+                    break;
+                case GameState.GroupSelectScreen:
+                    UpdateGroupSelectScreen(gameTime);
+                    break;
+                case GameState.SongSelectScreen:
+                    UpdateSongSelectScreen(gameTime);
+                    break;
+                case GameState.LivePreparationScreen:
+                    UpdateLivePreparationScreen(gameTime);
+                    break;
+                case GameState.LiveScreen:
+                    UpdateLiveScreen(gameTime);
+                    break;
+                case GameState.ResultScreen:
+                    UpdateResultScreen(gameTime);
+                    break;
+                case GameState.GoodbyeScreen:
+                    UpdateGoodbyeScreen(gameTime);
+                    break;
+            }
+        }
+
+        void UpdateTitleScreen(GameTime gameTime) {
+            // TODO
+        }
+
+        void UpdateNesicaCheckScreen(GameTime gameTime) {
+            // TODO
+        }
+
+        void UpdateGroupSelectScreen(GameTime gameTime) {
+            // TODO
+        }
+
+        void UpdateSongSelectScreen(GameTime gameTime) {
+
+        }
+
+        void UpdateLivePreparationScreen(GameTime gameTime) {
+            // TODO
+        }
+
+        void UpdateLiveScreen(GameTime gameTime) {
             if (playVideo & bgVideoPlayer.State == MediaState.Stopped) {
                 bgVideoPlayer.Volume = 0.2f;
                 bgVideoPlayer.Play(bgVideo);
                 playVideo = false;
             }
-           
+
             var kstate = Keyboard.GetState();
             // Detect key down
             if (kstate.IsKeyDown(Keys.A) & !previousState.IsKeyDown(Keys.A)) {
-                judgeHit(0, true);
+                JudgeHit(0, true);
             }
             if (kstate.IsKeyDown(Keys.S) & !previousState.IsKeyDown(Keys.S)) {
-                judgeHit(1, true);
+                JudgeHit(1, true);
             }
             if (kstate.IsKeyDown(Keys.D) & !previousState.IsKeyDown(Keys.D)) {
-                judgeHit(2, true);
+                JudgeHit(2, true);
             }
             if (kstate.IsKeyDown(Keys.F) & !previousState.IsKeyDown(Keys.F)) {
-                judgeHit(3, true);
+                JudgeHit(3, true);
             }
             if (kstate.IsKeyDown(Keys.Space) & !previousState.IsKeyDown(Keys.Space)) {
-                judgeHit(4, true);
+                JudgeHit(4, true);
             }
             if (kstate.IsKeyDown(Keys.J) & !previousState.IsKeyDown(Keys.J)) {
-                judgeHit(5, true);
+                JudgeHit(5, true);
             }
             if (kstate.IsKeyDown(Keys.K) & !previousState.IsKeyDown(Keys.K)) {
-                judgeHit(6, true);
+                JudgeHit(6, true);
             }
             if (kstate.IsKeyDown(Keys.L) & !previousState.IsKeyDown(Keys.L)) {
-                judgeHit(7, true);
+                JudgeHit(7, true);
             }
             if (kstate.IsKeyDown(Keys.OemSemicolon) & !previousState.IsKeyDown(Keys.OemSemicolon)) {
-                judgeHit(8, true);
+                JudgeHit(8, true);
             }
             if (kstate.IsKeyDown(Keys.Escape) & !previousState.IsKeyDown(Keys.Escape)) {
-                Console.WriteLine("Red Down");
+                Console.WriteLine("Red Button Pressed");
                 Exit();
             }
             if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
-                Console.WriteLine("Blue Down");
+                Console.WriteLine("Blue Button Pressed");
             }
 
             // Detect key up
             if (!kstate.IsKeyDown(Keys.A) & previousState.IsKeyDown(Keys.A)) {
-                judgeHit(0, false);
+                JudgeHit(0, false);
             }
             if (!kstate.IsKeyDown(Keys.S) & previousState.IsKeyDown(Keys.S)) {
-                judgeHit(1, false);
+                JudgeHit(1, false);
             }
             if (!kstate.IsKeyDown(Keys.D) & previousState.IsKeyDown(Keys.D)) {
-                judgeHit(2, false);
+                JudgeHit(2, false);
             }
             if (!kstate.IsKeyDown(Keys.F) & previousState.IsKeyDown(Keys.F)) {
-                judgeHit(3, false);
+                JudgeHit(3, false);
             }
             if (!kstate.IsKeyDown(Keys.Space) & previousState.IsKeyDown(Keys.Space)) {
-                judgeHit(4, false);
+                JudgeHit(4, false);
             }
             if (!kstate.IsKeyDown(Keys.J) & previousState.IsKeyDown(Keys.J)) {
-                judgeHit(5, false);
+                JudgeHit(5, false);
             }
             if (!kstate.IsKeyDown(Keys.K) & previousState.IsKeyDown(Keys.K)) {
-                judgeHit(6, false);
+                JudgeHit(6, false);
             }
             if (!kstate.IsKeyDown(Keys.L) & previousState.IsKeyDown(Keys.L)) {
-                judgeHit(7, false);
+                JudgeHit(7, false);
             }
             if (!kstate.IsKeyDown(Keys.OemSemicolon) & previousState.IsKeyDown(Keys.OemSemicolon)) {
-                judgeHit(8, false);
+                JudgeHit(8, false);
             }
             if (!kstate.IsKeyDown(Keys.Escape) & previousState.IsKeyDown(Keys.Escape)) {
-                Console.WriteLine("Red Up");
+                Console.WriteLine("Red Button Released");
                 Exit();
             }
             if (!kstate.IsKeyDown(Keys.Enter) & previousState.IsKeyDown(Keys.Enter)) {
-                Console.WriteLine("Blue Up");
+                Console.WriteLine("Blue Button Released");
             }
+            previousState = kstate;
 
             foreach (Note note in beatmap) {
                 //AUTOPLAY CODE
@@ -309,6 +399,7 @@ namespace SIFAC {
                     note.result = NoteAccuracy.Perfect;
                     hitSoundEffects[0].Play(0.2f, 0f, 0f);
                     note.hasResolved = true;
+                    perfects++;
                 }
                 //END AUTOPLAY CODE
 
@@ -324,15 +415,21 @@ namespace SIFAC {
             }
 
             if (bgVideoPlayer.State == MediaState.Stopped) {
-                Console.WriteLine("Perfect: " + perfects);
-                Console.WriteLine("Great: " + greats);
-                Console.WriteLine("Good: " + goods);
-                Console.WriteLine("Bad: " + bads);
-                Console.WriteLine("Miss: " + misses);
+                currentGameState = GameState.ResultScreen;
             }
+        }
 
-            base.Update(gameTime);
-            previousState = kstate;
+        void UpdateResultScreen(GameTime gameTime) {
+            // TODO
+            Console.WriteLine("Perfect: " + perfects);
+            Console.WriteLine("Great: " + greats);
+            Console.WriteLine("Good: " + goods);
+            Console.WriteLine("Bad: " + bads);
+            Console.WriteLine("Miss: " + misses);
+        }
+
+        void UpdateGoodbyeScreen(GameTime gameTime) {
+            // TODO
         }
 
         /// <summary>
@@ -340,7 +437,62 @@ namespace SIFAC {
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime) {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            base.Draw(gameTime);
+            switch (currentGameState) {
+                case GameState.TitleScreen:
+                    DrawTitleScreen(gameTime);
+                    break;
+                case GameState.NesicaCheckScreen:
+                    DrawNesicaCheckScreen(gameTime);
+                    break;
+                case GameState.GroupSelectScreen:
+                    DrawGroupSelectScreen(gameTime);
+                    break;
+                case GameState.SongSelectScreen:
+                    DrawSongSelectScreen(gameTime);
+                    break;
+                case GameState.LivePreparationScreen:
+                    DrawLivePreparationScreen(gameTime);
+                    break;
+                case GameState.LiveScreen:
+                    DrawLiveScreen(gameTime);
+                    break;
+                case GameState.ResultScreen:
+                    DrawResultScreen(gameTime);
+                    break;
+                case GameState.GoodbyeScreen:
+                    DrawGoodbyeScreen(gameTime);
+                    break;
+            }
+        }
+
+        void DrawTitleScreen(GameTime gameTime) {
+            // TODO
+            GraphicsDevice.Clear(Color.White);
+        }
+
+        void DrawNesicaCheckScreen(GameTime gameTime) {
+            // TODO
+            GraphicsDevice.Clear(Color.White);
+        }
+
+        void DrawGroupSelectScreen(GameTime gameTime) {
+            // TODO
+            GraphicsDevice.Clear(Color.White);
+        }
+
+        void DrawSongSelectScreen(GameTime gameTime) {
+            // TODO
+            GraphicsDevice.Clear(Color.White);
+        }
+
+        void DrawLivePreparationScreen(GameTime gameTime) {
+            // TODO
+            GraphicsDevice.Clear(Color.White);
+        }
+
+        void DrawLiveScreen(GameTime gameTime) {
+            GraphicsDevice.Clear(Color.White);
 
             spriteBatch.Begin();
             spriteBatch.Draw(
@@ -364,9 +516,12 @@ namespace SIFAC {
             double currentVideoPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
             Note previousNote = new Note(-1, -1, false, false, false, 0, 0, false);
             foreach (Note note in beatmap) {
+                if (note.hasResolved) {
+                    continue;
+                }
                 if (note.position <= currentVideoPosition + noteSpeed && !note.hasResolved) {
-                    float[] coordinates = calculateNoteCoordinates(currentVideoPosition, note);
-                    float noteSize = 0.35f - (float)((note.position - currentVideoPosition)*0.15f);
+                    float[] coordinates = CalculateNoteCoordinates(currentVideoPosition, note);
+                    float noteSize = 0.35f - (float)((note.position - currentVideoPosition) * 0.15f);
 
                     // TODO figure out why orange and blue aren't working as expected
                     if (note.texture == null) {
@@ -433,11 +588,44 @@ namespace SIFAC {
                 }
                 previousNote = note;
             }
-
-            // spriteBatch.Draw(noteTexture, notePosition, Color.White);
             spriteBatch.End();
+        }
 
-            base.Draw(gameTime);
+        void DrawResultScreen(GameTime gameTime) {
+            // TODO
+            GraphicsDevice.Clear(Color.White);
+            spriteBatch.Begin();
+            spriteBatch.DrawString(defaultFont, 
+                                   "Perfect: " + perfects,
+                                   new Vector2(200, 100),
+                                   Color.Black
+                                   );
+            spriteBatch.DrawString(defaultFont,
+                                   "Great: " + greats,
+                                   new Vector2(200, 200),
+                                   Color.Black
+                                   );
+            spriteBatch.DrawString(defaultFont,
+                                   "Good: " + goods,
+                                   new Vector2(200, 300),
+                                   Color.Black
+                                   );
+            spriteBatch.DrawString(defaultFont,
+                                   "Bad: " + bads,
+                                   new Vector2(200, 400),
+                                   Color.Black
+                                   );
+            spriteBatch.DrawString(defaultFont,
+                                   "Miss: " + misses,
+                                   new Vector2(200, 500),
+                                   Color.Black
+                                   );
+            spriteBatch.End();
+        }
+
+        void DrawGoodbyeScreen(GameTime gameTime) {
+            // TODO
+            GraphicsDevice.Clear(Color.White);
         }
 
         /// <summary>
@@ -447,7 +635,7 @@ namespace SIFAC {
         /// <param name="lane">The lane in which the note should be drawn.</param>
         /// <param name="note">The Note to be drawn.</param>
         /// <returns>Returns a float array of length 2, where the 0th element is the X coordinate of the note and the 1st element is the Y coordinate.</returns>
-        private float[] calculateNoteCoordinates(double songPosition, Note note) {
+        private float[] CalculateNoteCoordinates(double songPosition, Note note) {
             int lane = note.lane;
 
             // First, calculate the X coordinates
@@ -530,7 +718,7 @@ namespace SIFAC {
         /// </summary>
         /// <param name="holdNote">The hold note for which the release note should be found.</param>
         /// <returns>The corresponding release note of the hold note.</returns>
-        private Note getReleaseNote(Note holdNote) {
+        private Note GetReleaseNote(Note holdNote) {
             if (holdNote.isHold) {
                 foreach (Note note in beatmap) {
                     if (note.isRelease && note.lane == holdNote.lane && note.position > holdNote.position) {
@@ -549,7 +737,7 @@ namespace SIFAC {
         /// <param name="lane">The lane in which the button was pressed.</param>
         /// <param name="down">Whether the button is being pushed or released. Should be true if pushed, otherwise false if released (used for hold note releases).</param>
         /// <returns></returns>
-        private NoteAccuracy judgeHit(int lane, Boolean down) {
+        private NoteAccuracy JudgeHit(int lane, Boolean down) {
             foreach (Note note in beatmap) {
                 if (down && !note.isRelease) {
                     if (note.lane == lane && note.position - bgVideoPlayer.PlayPosition.TotalSeconds <= badTolerance) {

@@ -2,7 +2,7 @@
 School Idol Festival AC - Project Northern Stage (SIFAC-PNS for short) is an unofficial, fan-made version of the Japanese arcade game [School Idol Festival AC Next Stage (SIFAC NS)](http://www.lovelive-sifacns.jp). It is intended to be played on PC with the use of a specialized, custom-made controller (currently a work in progress).
 
 ## Project Statement
-The goal of this project is to achieve a gameplay experience as similar to that of the official arcade machines as possible. This experience will be achieved through recreating the look and feel of the official arcade machines as faithfully to the origial as reasonably possible. However, this recreation will obviously be limited to factors such as what official assets can be obtained and what must be recreated from scratch, as well as the quality of the custom controller when that is completed.
+The goal of this project is to achieve a gameplay experience as similar to that of the official arcade machines as possible. This experience will be achieved through recreating the look and feel of the official arcade machines as faithfully to the original as reasonably possible. However, this recreation will obviously be limited by factors such as what official assets can be obtained and what must be recreated from scratch, as well as the quality of the custom controller when that is completed.
 
 ## Project Staff
 This project is being worked on by:

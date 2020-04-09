@@ -94,7 +94,8 @@ namespace SIFAC {
         Texture2D tooltipR3R4;
         Texture2D[] mainHighlightedTooltips = new Texture2D[5];
         int highlightedMenuElement = 2;
-        PlayableSong[] menuChoices = new PlayableSong[5]; // Currently displayed song choices. 0 to 4, left to right.
+        int songSelectPage = 0; // Each page has 5 songs, and page n is indices n*5 through n*5+4 of songs
+        PlayableSong[] menuChoices = new PlayableSong[5]; // Currently displayed song choices. 0 to 4, left to right. Index 0 corresonds to L2, 1 to L1, etc, and 4 to R2.
 
         Texture2D noteTexture;
         Texture2D noteMultiBlueTexture;
@@ -148,6 +149,9 @@ namespace SIFAC {
 
         // Autoplay, for debug purposes
         Boolean autoplay = true;
+
+        // 720p flag for debugging. Game is intended to be play fullscreen at 1080p.
+        Boolean smallWindow = true;
         /* END CONFIG */
 
         public SIFAC() {
@@ -162,17 +166,16 @@ namespace SIFAC {
         /// and initialize them as well.
         /// </summary>
         protected override void Initialize() {
-            /*
-            graphics.PreferredBackBufferWidth = 1920;
-            graphics.PreferredBackBufferHeight = 1080;
-            graphics.IsFullScreen = true;
-            */
 
-            ///*
-            graphics.PreferredBackBufferWidth = 1280;
-            graphics.PreferredBackBufferHeight = 720;
-            graphics.IsFullScreen = false;
-            //*/
+            if (smallWindow) {
+                graphics.PreferredBackBufferWidth = 1280;
+                graphics.PreferredBackBufferHeight = 720;
+                graphics.IsFullScreen = false;
+            } else {
+                graphics.PreferredBackBufferWidth = 1920;
+                graphics.PreferredBackBufferHeight = 1080;
+                graphics.IsFullScreen = true;
+            }
 
             graphics.ApplyChanges();
 
@@ -288,6 +291,11 @@ namespace SIFAC {
             Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
 
             songs.Add(new PlayableSong("Believe Again", cover, video, beatmap));
+
+            songs.Add(new PlayableSong("Placeholder 1", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), null, new Note[0]));
+            songs.Add(new PlayableSong("Placeholder 2", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), null, new Note[0]));
+            songs.Add(new PlayableSong("Placeholder 3", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), null, new Note[0]));
+            songs.Add(new PlayableSong("Placeholder 4", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), null, new Note[0]));
         }
 
         /// <summary>
@@ -347,6 +355,11 @@ namespace SIFAC {
         }
 
         void UpdateSongSelectScreen(GameTime gameTime) {
+            // Get the 5 songs on the current page
+            for (int i = 0; i < 5; i++) {
+                menuChoices[i] = songs[(songSelectPage * 5) + i];
+            }
+
             var kstate = Keyboard.GetState();
             // Detect key down
             if (kstate.IsKeyDown(Keys.A) & !previousState.IsKeyDown(Keys.A)) {
@@ -381,7 +394,13 @@ namespace SIFAC {
                 Exit();
             }
             if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
-                Console.WriteLine("Blue Button Pressed");
+                currentSong = menuChoices[highlightedMenuElement];
+                if (playVideo & bgVideoPlayer.State == MediaState.Stopped) {
+                    bgVideoPlayer.Volume = 0.2f;
+                    bgVideoPlayer.Play(currentSong.backgroundMv);
+                    playVideo = false;
+                }
+                currentGameState = GameState.LiveScreen; // TODO add live preparation screen
             }
             previousState = kstate;
         }
@@ -391,12 +410,6 @@ namespace SIFAC {
         }
 
         void UpdateLiveScreen(GameTime gameTime) {
-            if (playVideo & bgVideoPlayer.State == MediaState.Stopped) {
-                bgVideoPlayer.Volume = 0.2f;
-                bgVideoPlayer.Play(currentSong.backgroundMv);
-                playVideo = false;
-            }
-
             var kstate = Keyboard.GetState();
             // Detect key down
             if (kstate.IsKeyDown(Keys.A) & !previousState.IsKeyDown(Keys.A)) {
@@ -500,11 +513,44 @@ namespace SIFAC {
 
         void UpdateResultScreen(GameTime gameTime) {
             // TODO
-            Console.WriteLine("Perfect: " + perfects);
-            Console.WriteLine("Great: " + greats);
-            Console.WriteLine("Good: " + goods);
-            Console.WriteLine("Bad: " + bads);
-            Console.WriteLine("Miss: " + misses);
+            var kstate = Keyboard.GetState();
+            // Detect key down
+            if (kstate.IsKeyDown(Keys.A) & !previousState.IsKeyDown(Keys.A)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.S) & !previousState.IsKeyDown(Keys.S)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.D) & !previousState.IsKeyDown(Keys.D)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.F) & !previousState.IsKeyDown(Keys.F)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.Space) & !previousState.IsKeyDown(Keys.Space)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.J) & !previousState.IsKeyDown(Keys.J)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.K) & !previousState.IsKeyDown(Keys.K)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.L) & !previousState.IsKeyDown(Keys.L)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.OemSemicolon) & !previousState.IsKeyDown(Keys.OemSemicolon)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.Escape) & !previousState.IsKeyDown(Keys.Escape)) {
+                Console.WriteLine("Red Button Pressed");
+                Exit();
+            }
+            if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
+                // TODO
+                currentGameState = GameState.SongSelectScreen;
+            }
+            previousState = kstate;
         }
 
         void UpdateGoodbyeScreen(GameTime gameTime) {
@@ -564,35 +610,97 @@ namespace SIFAC {
             // TODO
             GraphicsDevice.Clear(new Color(19, 232, 174));
 
+            // Offsets to account for the slight curvature of the tooltips
+            float[] xOffsets = { 
+                graphics.PreferredBackBufferWidth / 27f,
+                graphics.PreferredBackBufferWidth / 33f,
+                graphics.PreferredBackBufferWidth / 33f,
+                graphics.PreferredBackBufferWidth / 36f,
+                graphics.PreferredBackBufferWidth / 44f
+            };
+
+            float[] yOffsets = {
+                graphics.PreferredBackBufferHeight / 20f,
+                graphics.PreferredBackBufferHeight / 25f,
+                graphics.PreferredBackBufferHeight / 25f,
+                graphics.PreferredBackBufferHeight / 25f,
+                graphics.PreferredBackBufferHeight / 20f
+            };
+
             spriteBatch.Begin();
 
-            // Draw the tooltip shapes for L2, L1, C, R1, and R2
+            // Draw the tooltips for L2, L1, C, R1, and R2
             for (int i = 0; i < 5; i++) {
                 float x = (graphics.PreferredBackBufferWidth / 2 - (graphics.PreferredBackBufferWidth / 3.2f)) + ((graphics.PreferredBackBufferWidth / 6.4f) * i);
                 float y = graphics.PreferredBackBufferHeight / 5 * 4;
                 if (highlightedMenuElement == i) {
+                    // Draw base tooltip shape
                     spriteBatch.Draw(mainHighlightedTooltips[i],
-                    new Vector2(x, y),
-                    null,
-                    Color.White,
-                    0f,
-                    new Vector2(mainHighlightedTooltips[i].Width / 2, mainHighlightedTooltips[i].Height / 2),
-                    graphics.PreferredBackBufferWidth / 3840f, // Scale of 0.5 at intended 1080p
-                    SpriteEffects.None,
-                    0f);
+                        new Vector2(x, y),
+                        null,
+                        Color.White,
+                        0f,
+                        new Vector2(mainHighlightedTooltips[i].Width / 2, mainHighlightedTooltips[i].Height / 2),
+                        graphics.PreferredBackBufferWidth / 3840f, // Scale of 0.5 at intended 1080p
+                        SpriteEffects.None,
+                        0f);
+
+                    // Draw album art
+                    spriteBatch.Draw(menuChoices[i].coverArt,
+                        new Vector2(x + xOffsets[i], y + yOffsets[i]),
+                        null,
+                        Color.White,
+                        0f,
+                        new Vector2(mainHighlightedTooltips[i].Width / 2, mainHighlightedTooltips[i].Height / 2),
+                        graphics.PreferredBackBufferWidth / 3490.91f, // Scale of 0.55 at intended 1080p
+                        SpriteEffects.None,
+                        0f);
+
+                    // Draw text
+                    spriteBatch.DrawString(defaultFont,
+                        menuChoices[i].title,
+                        new Vector2(x - (mainHighlightedTooltips[i].Width * graphics.PreferredBackBufferWidth / 3840f / 2), y + (mainHighlightedTooltips[i].Height * graphics.PreferredBackBufferHeight / 3840f / 2)),
+                        Color.Black,
+                        0f,
+                        new Vector2(0, 0),
+                        0.35f,
+                        SpriteEffects.None,
+                        0f);
                 } else {
+                    // Draw base tooltip shape
                     spriteBatch.Draw(mainTooltips[i],
-                    new Vector2(x, y),
-                    null,
-                    Color.White,
-                    0f,
-                    new Vector2(mainTooltips[i].Width / 2, mainTooltips[i].Height / 2),
-                    graphics.PreferredBackBufferWidth / 3840f, // Scale of 0.5 at intended 1080p
-                    SpriteEffects.None,
-                    0f);
+                        new Vector2(x, y),
+                        null,
+                        Color.White,
+                        0f,
+                        new Vector2(mainTooltips[i].Width / 2, mainTooltips[i].Height / 2),
+                        graphics.PreferredBackBufferWidth / 3840f, // Scale of 0.5 at intended 1080p
+                        SpriteEffects.None,
+                        0f);
+
+                    // Draw album art
+                    spriteBatch.Draw(menuChoices[i].coverArt,
+                        new Vector2(x + xOffsets[i], y + yOffsets[i]),
+                        null,
+                        Color.White,
+                        0f,
+                        new Vector2(mainHighlightedTooltips[i].Width / 2, mainHighlightedTooltips[i].Height / 2),
+                        graphics.PreferredBackBufferWidth / 3490.91f, // Scale of 0.55 at intended 1080p
+                        SpriteEffects.None,
+                        0f);
+
+                    // Draw text
+                    spriteBatch.DrawString(defaultFont,
+                        menuChoices[i].title,
+                        new Vector2(x - (mainTooltips[i].Width * graphics.PreferredBackBufferWidth / 3840f / 2), y + (mainTooltips[i].Height * graphics.PreferredBackBufferHeight / 3840f / 2)),
+                        Color.Black,
+                        0f,
+                        new Vector2(0, 0),
+                        0.35f,
+                        SpriteEffects.None,
+                        0f);
                 }   
             }
-
             spriteBatch.End();
         }
 

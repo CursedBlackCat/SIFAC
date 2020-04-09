@@ -7,7 +7,7 @@ The goal of this project is to achieve a gameplay experience as similar to that 
 ## Project Staff
 This project is being worked on by:
 * CursedBlackCat#7801 - Project lead, game client development, audiovisual asset recreation
-* Crumbs#2341 - Controller design and build
+* Crumbs#2341 - Controller design and build, audio asset recreation
 
 ## Project Status
 ### Game Client

@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using Microsoft.Xna.Framework.Audio;
 using System;
+using System.Collections.Generic;
 
 namespace SIFAC {
     public class Note {
@@ -34,13 +35,26 @@ namespace SIFAC {
         }
     }
 
+    public class BeatmapParseException : Exception {
+        public BeatmapParseException() {
+
+        }
+
+        public BeatmapParseException(string message) {
+
+        }
+    }
 
     public class PlayableSong {
         // TODO start moving assets for the beatmap here
-        Video backgroundMv;
-        Note[] beatmap;
+        public string title;
+        public Texture2D coverArt;
+        public Video backgroundMv;
+        public Note[] beatmap;
 
-        public PlayableSong(Video v, Note[] map) {
+        public PlayableSong(string title, Texture2D cover, Video v, Note[] map) {
+            this.title = title;
+            coverArt = cover;
             backgroundMv = v;
             beatmap = map;
         }
@@ -73,7 +87,14 @@ namespace SIFAC {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
-        GameState currentGameState = GameState.LiveScreen;
+        GameState currentGameState = GameState.SongSelectScreen;
+
+        Texture2D tooltipL3L4;
+        Texture2D[] mainTooltips = new Texture2D[5]; //0 to 4, left to right. These are the main 5 tooltips on the song select screen spanning L2 through R2.
+        Texture2D tooltipR3R4;
+        Texture2D[] mainHighlightedTooltips = new Texture2D[5];
+        int highlightedMenuElement = 2;
+        PlayableSong[] menuChoices = new PlayableSong[5]; // Currently displayed song choices. 0 to 4, left to right.
 
         Texture2D noteTexture;
         Texture2D noteMultiBlueTexture;
@@ -95,11 +116,11 @@ namespace SIFAC {
 
         KeyboardState previousState;
 
-        Video bgVideo;
+        List<PlayableSong> songs = new List<PlayableSong>();
+        PlayableSong currentSong;
+
         VideoPlayer bgVideoPlayer;
         Boolean playVideo = true;
-
-        Note[] beatmap;
 
         SoundEffect[] hitSoundEffects = new SoundEffect[4]; // hitSoundEffects[0] is perfect, 1 is great, 2 is good, 3 is bad
 
@@ -110,15 +131,15 @@ namespace SIFAC {
         int misses = 0;
 
 
-       /* CONFIG */
-        float noteSpeed = 1f; // Note speed, represented by seconds from spawn to note hit position.
-
+        /* CONFIG */
         // Timing tolerences, in seconds. Hitting a note at its time + or - each of these values gets the corresponding accuracy rating.
-        double perfectTolerance = 0.2;
-        double greatTolerance = 0.4;
-        double goodTolerance = 0.6;
-        double badTolerance = 1;
-        double missTolerance = 1.5; // Not hitting a note after this much time elapses after its hit time will count as a miss
+        readonly double perfectTolerance = 0.2;
+        readonly double greatTolerance = 0.4;
+        readonly double goodTolerance = 0.6;
+        readonly double badTolerance = 1;
+        readonly double missTolerance = 1.5; // Not hitting a note after this much time elapses after its hit time will count as a miss
+
+        float noteSpeed = 1f; // Note speed, represented by seconds from spawn to note hit position.
 
         // Timing offset setting, in seconds.
         // Use a timeOffset value of -0.05 for playing and -0.25 for autoplay. These values aren't perfect.
@@ -187,6 +208,20 @@ namespace SIFAC {
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // Load textures
+            tooltipL3L4 = Content.Load<Texture2D>("ui/Tooltip_L3_L4");
+            mainTooltips[0] = Content.Load<Texture2D>("ui/Tooltip_L2");
+            mainTooltips[1] = Content.Load<Texture2D>("ui/Tooltip_L1");
+            mainTooltips[2] = Content.Load<Texture2D>("ui/Tooltip_C");
+            mainTooltips[3] = Content.Load<Texture2D>("ui/Tooltip_R1");
+            mainTooltips[4] = Content.Load<Texture2D>("ui/Tooltip_R2");
+            tooltipR3R4 = Content.Load<Texture2D>("ui/Tooltip_R3_R4");
+
+            mainHighlightedTooltips[0] = Content.Load<Texture2D>("ui/Tooltip_L2_Highlighted");
+            mainHighlightedTooltips[1] = Content.Load<Texture2D>("ui/Tooltip_L1_Highlighted");
+            mainHighlightedTooltips[2] = Content.Load<Texture2D>("ui/Tooltip_C_Highlighted");
+            mainHighlightedTooltips[3] = Content.Load<Texture2D>("ui/Tooltip_R1_Highlighted");
+            mainHighlightedTooltips[4] = Content.Load<Texture2D>("ui/Tooltip_R2_Highlighted");
+
             noteTexture = Content.Load<Texture2D>("notes/Note");
             noteMultiBlueTexture = Content.Load<Texture2D>("notes/Note_Multi_Blue");
             noteMultiOrangeTexture = Content.Load<Texture2D>("notes/Note_Multi_Orange");
@@ -195,21 +230,25 @@ namespace SIFAC {
             noteReleaseMultiOrangeTexture = Content.Load<Texture2D>("notes/Note_Hold_Release_Multi_Orange");
             hitMarkerTexture = Content.Load<Texture2D>("notes/HitMarker");
 
-            // Load fonts
-            defaultFont = Content.Load<SpriteFont>("fonts/DefaultFont");
-
-            // Load videos
-            bgVideo = Content.Load<Video>("beatmap_assets/Believe Again/video");
+            // Initialize the VideoPlayer
             bgVideoPlayer = new VideoPlayer();
 
+            // Load the note hit sounds
             hitSoundEffects[0] = Content.Load<SoundEffect>("sounds/hit_perfect");
             hitSoundEffects[1] = Content.Load<SoundEffect>("sounds/hit_great");
             hitSoundEffects[2] = Content.Load<SoundEffect>("sounds/hit_good");
             hitSoundEffects[3] = Content.Load<SoundEffect>("sounds/hit_bad");
 
-            //Load the beatmap
+            // Load fonts
+            defaultFont = Content.Load<SpriteFont>("fonts/DefaultFont");
+
+            // Load beatmap assets
+            // TODO use a for loop of some sort to dynamically load all beatmaps
+            Video video = Content.Load<Video>("beatmap_assets/Believe Again/video");
+            Texture2D cover = Content.Load<Texture2D>("beatmap_assets/Believe Again/cover");
+            // Load the notes
             string[] lines = System.IO.File.ReadAllLines(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Beatmaps\believe_again.txt");
-            beatmap = new Note[lines.Length];
+            Note[] beatmap = new Note[lines.Length];
             for (int i = 0; i < lines.Length; i++) {
                 string[] data = lines[i].Split('/');
                 int lane = -1;
@@ -241,10 +280,14 @@ namespace SIFAC {
                     case "R4":
                         lane = 8;
                         break;
+                    default:
+                        throw new BeatmapParseException("Invalid note lane " + data[1]);
                 }
                 beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]));
             }
             Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
+
+            songs.Add(new PlayableSong("Believe Again", cover, video, beatmap));
         }
 
         /// <summary>
@@ -304,7 +347,43 @@ namespace SIFAC {
         }
 
         void UpdateSongSelectScreen(GameTime gameTime) {
-
+            var kstate = Keyboard.GetState();
+            // Detect key down
+            if (kstate.IsKeyDown(Keys.A) & !previousState.IsKeyDown(Keys.A)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.S) & !previousState.IsKeyDown(Keys.S)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.D) & !previousState.IsKeyDown(Keys.D)) {
+                highlightedMenuElement = 0;
+            }
+            if (kstate.IsKeyDown(Keys.F) & !previousState.IsKeyDown(Keys.F)) {
+                highlightedMenuElement = 1;
+            }
+            if (kstate.IsKeyDown(Keys.Space) & !previousState.IsKeyDown(Keys.Space)) {
+                highlightedMenuElement = 2;
+            }
+            if (kstate.IsKeyDown(Keys.J) & !previousState.IsKeyDown(Keys.J)) {
+                highlightedMenuElement = 3;
+            }
+            if (kstate.IsKeyDown(Keys.K) & !previousState.IsKeyDown(Keys.K)) {
+                highlightedMenuElement = 4;
+            }
+            if (kstate.IsKeyDown(Keys.L) & !previousState.IsKeyDown(Keys.L)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.OemSemicolon) & !previousState.IsKeyDown(Keys.OemSemicolon)) {
+                // TODO
+            }
+            if (kstate.IsKeyDown(Keys.Escape) & !previousState.IsKeyDown(Keys.Escape)) {
+                Console.WriteLine("Red Button Pressed");
+                Exit();
+            }
+            if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
+                Console.WriteLine("Blue Button Pressed");
+            }
+            previousState = kstate;
         }
 
         void UpdateLivePreparationScreen(GameTime gameTime) {
@@ -314,7 +393,7 @@ namespace SIFAC {
         void UpdateLiveScreen(GameTime gameTime) {
             if (playVideo & bgVideoPlayer.State == MediaState.Stopped) {
                 bgVideoPlayer.Volume = 0.2f;
-                bgVideoPlayer.Play(bgVideo);
+                bgVideoPlayer.Play(currentSong.backgroundMv);
                 playVideo = false;
             }
 
@@ -392,7 +471,7 @@ namespace SIFAC {
             }
             previousState = kstate;
 
-            foreach (Note note in beatmap) {
+            foreach (Note note in currentSong.beatmap) {
                 //AUTOPLAY CODE
                 if (autoplay && !note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset) {
                     // Console.WriteLine("Auto");
@@ -483,7 +562,38 @@ namespace SIFAC {
 
         void DrawSongSelectScreen(GameTime gameTime) {
             // TODO
-            GraphicsDevice.Clear(Color.White);
+            GraphicsDevice.Clear(new Color(19, 232, 174));
+
+            spriteBatch.Begin();
+
+            // Draw the tooltip shapes for L2, L1, C, R1, and R2
+            for (int i = 0; i < 5; i++) {
+                float x = (graphics.PreferredBackBufferWidth / 2 - (graphics.PreferredBackBufferWidth / 3.2f)) + ((graphics.PreferredBackBufferWidth / 6.4f) * i);
+                float y = graphics.PreferredBackBufferHeight / 5 * 4;
+                if (highlightedMenuElement == i) {
+                    spriteBatch.Draw(mainHighlightedTooltips[i],
+                    new Vector2(x, y),
+                    null,
+                    Color.White,
+                    0f,
+                    new Vector2(mainHighlightedTooltips[i].Width / 2, mainHighlightedTooltips[i].Height / 2),
+                    graphics.PreferredBackBufferWidth / 3840f, // Scale of 0.5 at intended 1080p
+                    SpriteEffects.None,
+                    0f);
+                } else {
+                    spriteBatch.Draw(mainTooltips[i],
+                    new Vector2(x, y),
+                    null,
+                    Color.White,
+                    0f,
+                    new Vector2(mainTooltips[i].Width / 2, mainTooltips[i].Height / 2),
+                    graphics.PreferredBackBufferWidth / 3840f, // Scale of 0.5 at intended 1080p
+                    SpriteEffects.None,
+                    0f);
+                }   
+            }
+
+            spriteBatch.End();
         }
 
         void DrawLivePreparationScreen(GameTime gameTime) {
@@ -515,7 +625,7 @@ namespace SIFAC {
 
             double currentVideoPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
             Note previousNote = new Note(-1, -1, false, false, false, 0, 0, false);
-            foreach (Note note in beatmap) {
+            foreach (Note note in currentSong.beatmap) {
                 if (note.hasResolved) {
                     continue;
                 }
@@ -720,7 +830,7 @@ namespace SIFAC {
         /// <returns>The corresponding release note of the hold note.</returns>
         private Note GetReleaseNote(Note holdNote) {
             if (holdNote.isHold) {
-                foreach (Note note in beatmap) {
+                foreach (Note note in currentSong.beatmap) {
                     if (note.isRelease && note.lane == holdNote.lane && note.position > holdNote.position) {
                         return note;
                     }
@@ -738,7 +848,7 @@ namespace SIFAC {
         /// <param name="down">Whether the button is being pushed or released. Should be true if pushed, otherwise false if released (used for hold note releases).</param>
         /// <returns></returns>
         private NoteAccuracy JudgeHit(int lane, Boolean down) {
-            foreach (Note note in beatmap) {
+            foreach (Note note in currentSong.beatmap) {
                 if (down && !note.isRelease) {
                     if (note.lane == lane && note.position - bgVideoPlayer.PlayPosition.TotalSeconds <= badTolerance) {
                         double diff = note.position - bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset;

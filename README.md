@@ -11,11 +11,7 @@ This project is being worked on by:
 
 ## Project Status
 ### Game Client
-The game client still has much work to be done. One beatmap is currently playable with some visual bugs.
-Current known issues:
-* Hold notes do not show a trail
-* Some notes do not disappear after being hit
-* Poor timing offset
+The game client still has much work to be done. One beatmap is currently playable, as well as two debugging beatmaps.
 
 To-do (based on program flow of official arcade machines):
 - [ ] Title screen

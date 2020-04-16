@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Media;
 using Microsoft.Xna.Framework.Audio;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SIFAC {
     public class Note {
@@ -35,6 +36,22 @@ namespace SIFAC {
         }
     }
 
+    public class NoteTrail {
+        public Vector2 position;
+        public float scale;
+        public float spawnTime;
+        public float removeTime;
+        public Note releaseNote;
+
+        public NoteTrail(Vector2 position, float scale, float spawnTime, float removeTime, Note releaseNote) {
+            this.position = position;
+            this.scale = scale;
+            this.spawnTime = spawnTime;
+            this.removeTime = removeTime;
+            this.releaseNote = releaseNote;
+        }
+    }
+
     public class BeatmapParseException : Exception {
         public BeatmapParseException() {
 
@@ -53,6 +70,7 @@ namespace SIFAC {
         public Video backgroundMv = null;
         public Note[] beatmap;
         public PlayableSongType type;
+        public float beatmapTimeOffset; // Time offset of all notes in beatmap, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.
 
         /// <summary>
         /// Constructs a PlayableSong with a background video, using the video as the beatmap's song source.
@@ -82,6 +100,56 @@ namespace SIFAC {
             music = s;
             beatmap = map;
             type = PlayableSongType.Music;
+        }
+
+        /// <summary>
+        /// Constructs a PlayableSong with a time offset and a background video, using the video as the beatmap's song source.
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="cover"></param>
+        /// <param name="v"></param>
+        /// <param name="map"></param>
+        /// <param name="offset"></param>
+        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, float offset) {
+            this.title = title;
+            coverArt = cover;
+            backgroundMv = v;
+            beatmap = map;
+            type = PlayableSongType.Video;
+            
+            foreach (Note note in beatmap) {
+                note.position += offset;
+                if (note.isHold) {
+                    note.releaseNoteSpawnTime += offset;
+                } else if (note.isRelease) {
+                    note.parentNoteSpawnTime += offset;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Constructs a PlayableSong with a time offset and no background video.
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="cover"></param>
+        /// <param name="v"></param>
+        /// <param name="map"></param>
+        /// <param name="offset"></param>
+        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, float offset) {
+            this.title = title;
+            coverArt = cover;
+            music = s;
+            beatmap = map;
+            type = PlayableSongType.Music;
+
+            foreach (Note note in beatmap) {
+                note.position += offset;
+                if (note.isHold) {
+                    note.releaseNoteSpawnTime += offset;
+                } else if (note.isRelease) {
+                    note.parentNoteSpawnTime += offset;
+                }
+            }
         }
     }
 
@@ -134,6 +202,7 @@ namespace SIFAC {
         Texture2D noteReleaseMultiBlueTexture;
         Texture2D noteReleaseMultiOrangeTexture;
         Texture2D hitMarkerTexture;
+        Texture2D noteTrailTexture;
 
         SpriteFont defaultFont;
 
@@ -143,6 +212,7 @@ namespace SIFAC {
         float radiusH; // This is set in Initialize()
         float radiusV; // This is set in Initialize()
         Vector2 noteSpawnPosition;
+        List<NoteTrail> noteTrailPositions = new List<NoteTrail>();
         Boolean lastMultiWasBlue = false; // Used to toggle between orange and blue multi notes
 
         KeyboardState previousState;
@@ -183,7 +253,7 @@ namespace SIFAC {
         Boolean autoplay = false;
 
         // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be play fullscreen at 1080p.
-        Boolean fullscreen = false;
+        Boolean fullscreen = true;
         /* END CONFIG */
 
         public SIFAC() {
@@ -264,11 +334,10 @@ namespace SIFAC {
             noteReleaseMultiBlueTexture = Content.Load<Texture2D>("notes/Note_Hold_Release_Multi_Blue");
             noteReleaseMultiOrangeTexture = Content.Load<Texture2D>("notes/Note_Hold_Release_Multi_Orange");
             hitMarkerTexture = Content.Load<Texture2D>("notes/HitMarker");
+            noteTrailTexture = Content.Load<Texture2D>("notes/Note_Trail");
 
             // Initialize the VideoPlayer
             bgVideoPlayer = new VideoPlayer();
-
-            // Initialize the MediaPlayer
 
             // Load the note hit sounds
             hitSoundEffects[0] = Content.Load<SoundEffect>("sounds/hit_perfect");
@@ -326,7 +395,7 @@ namespace SIFAC {
             }
             Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
 
-            songs.Add(new PlayableSong("Believe Again", cover, video, beatmap));
+            songs.Add(new PlayableSong("Believe Again", cover, video, beatmap, 11f/30f));
 
             // Load the calibration beatmap
             lines = System.IO.File.ReadAllLines(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Calibration\beatmap.txt");
@@ -367,7 +436,7 @@ namespace SIFAC {
                 }
                 beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]));
             }
-            Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
+            beatmap = beatmap.OrderBy(x => x.position).ToArray();
 
             songs.Add(new PlayableSong("Calibration", Content.Load<Texture2D>("beatmap_assets/Calibration/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), beatmap));
 
@@ -607,6 +676,7 @@ namespace SIFAC {
             }
             previousState = kstate;
 
+            // TODO refactor this code to have one foreach for both scenarios
             if (currentSong.type == PlayableSongType.Video) { // Beatmap audio source is from video
                 foreach (Note note in currentSong.beatmap) {
                     //AUTOPLAY CODE
@@ -619,19 +689,39 @@ namespace SIFAC {
                     }
                     //END AUTOPLAY CODE
 
-                    if (note.result != NoteAccuracy.None) {
-                        note.hasResolved = true;
+                    // Code to handle currently visible hold trails
+                    double currentAudioPosition;
+                    if (currentSong.type == PlayableSongType.Video) {
+                        currentAudioPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
+                    } else {
+                        currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
                     }
-                    if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds - missTolerance) { //TODO factor in time offset
+
+                    if (note.isHold && !note.hasResolved && note.hasSpawned) {
+                        float[] coords = CalculateNoteCoordinates(currentAudioPosition, note);
+                        float removeTime = note.releaseNoteSpawnTime + ((float)currentAudioPosition - note.position);
+                        NoteTrail trail = new NoteTrail(new Vector2(coords[0], coords[1]), 0.35f - (float)((note.position - currentAudioPosition) * 0.30f), (float)currentAudioPosition, removeTime, GetReleaseNote(note));
+                        noteTrailPositions.Add(trail);
+                    }
+
+                    foreach (NoteTrail trail in noteTrailPositions.ToList()) {
+                        if (trail.removeTime < currentAudioPosition || trail.releaseNote.hasResolved) {
+                            noteTrailPositions.Remove(trail);
+                        }
+                    }
+
+                    // Handle missed notes
+                    if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset - missTolerance) {
                         Console.WriteLine("Miss");
                         note.result = NoteAccuracy.Miss;
                         note.hasResolved = true;
                         combo = 0;
                         misses++;
-                    }
-                    if (bgVideoPlayer.State == MediaState.Stopped) {
-                        currentGameState = GameState.ResultScreen;
-                    }
+                    }                   
+                }
+                // Detect if song is over
+                if (bgVideoPlayer.State == MediaState.Stopped) {
+                    currentGameState = GameState.ResultScreen;
                 }
             } else { // Beatmap audio source is from audio file
                 foreach (Note note in currentSong.beatmap) {
@@ -645,9 +735,30 @@ namespace SIFAC {
                     }
                     //END AUTOPLAY CODE
 
-                    if (note.result != NoteAccuracy.None) {
-                        note.hasResolved = true;
+                    // Code to handle currently visible hold trails
+                    double currentAudioPosition;
+                    if (currentSong.type == PlayableSongType.Video) {
+                        currentAudioPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
+                    } else {
+                        currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
                     }
+
+                    if (note.isHold && !note.hasResolved && note.hasSpawned) {
+                        float[] coords = CalculateNoteCoordinates(currentAudioPosition, note);
+                        float removeTime = note.releaseNoteSpawnTime + ((float) currentAudioPosition - note.position);
+                        if (removeTime < note.releaseNoteSpawnTime) {
+                            NoteTrail trail = new NoteTrail(new Vector2(coords[0], coords[1]), 0.35f - (float)((note.position - currentAudioPosition) * 0.30f), (float) currentAudioPosition, removeTime, GetReleaseNote(note));
+                            noteTrailPositions.Add(trail);
+                        }   
+                    }
+
+                    foreach (NoteTrail trail in noteTrailPositions.ToList()) {
+                        if (trail.removeTime < currentAudioPosition || trail.releaseNote.hasResolved) {
+                            noteTrailPositions.Remove(trail);
+                        }
+                    }
+
+                    // Handle misses
                     if (!note.hasResolved && note.position <= MediaPlayer.PlayPosition.TotalSeconds - missTolerance) { //TODO factor in time offset
                         Console.WriteLine("Miss");
                         note.result = NoteAccuracy.Miss;
@@ -655,7 +766,7 @@ namespace SIFAC {
                         misses++;
                     }
                 }
-
+                // Detect if song is over
                 if (MediaPlayer.State == MediaState.Stopped) {
                     currentGameState = GameState.ResultScreen;
                 }
@@ -871,18 +982,20 @@ namespace SIFAC {
         }
 
         void DrawLiveScreen(GameTime gameTime) {
-            GraphicsDevice.Clear(Color.White);
+            GraphicsDevice.Clear(Color.Black);
 
             spriteBatch.Begin();
 
-            if (currentSong.backgroundMv != null) {
+            // Draw the video
+            if (currentSong.type == PlayableSongType.Video) {
                 spriteBatch.Draw(
                     bgVideoPlayer.GetTexture(),
                     new Rectangle(0, 0, graphics.PreferredBackBufferWidth, graphics.PreferredBackBufferHeight),
                     Color.White
-                    );
+                );
             }
             
+            // Draw the hit positions
             for (int i = 0; i < 9; i++) {
                 spriteBatch.Draw(hitMarkerTexture,
                 hitMarkerPositions[i],
@@ -895,45 +1008,66 @@ namespace SIFAC {
                 0f);
             }
 
+            // Get current audio position (used for drawing notes and note trails)
             double currentAudioPosition;
             if (currentSong.type == PlayableSongType.Video) {
                 currentAudioPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
             } else {
                 currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
             }
-            
-            Note previousNote = new Note(-1, -1, false, false, false, 0, 0, false);
-            foreach (Note note in currentSong.beatmap) {
-                if (note.hasResolved) {
+
+            // Draw the trails
+            foreach (NoteTrail trail in noteTrailPositions) {
+                spriteBatch.Draw(noteTrailTexture,
+                    trail.position,
+                    null,
+                    Color.White,
+                    0f,
+                    new Vector2(noteTrailTexture.Width / 2, noteTrailTexture.Height / 2 - graphics.PreferredBackBufferHeight),
+                    trail.scale,
+                    SpriteEffects.None,
+                    0f); ;
+            }
+
+            // Draw the notes
+            for (int i = 0; i < currentSong.beatmap.Length; i++) {
+                Note note = currentSong.beatmap[i];
+                Note nextNote;
+                if (i + 1 >= currentSong.beatmap.Length) {
+                    nextNote = new Note(0f, 0, false, false, false, 0f, 0f, false);
+                } else {
+                    nextNote = currentSong.beatmap[i + 1];
+                }
+                if (note.hasResolved && !note.isHold) {
                     continue;
                 }
                 if (note.position <= currentAudioPosition + noteSpeed && !note.hasResolved) {
                     float[] coordinates = CalculateNoteCoordinates(currentAudioPosition, note);
-                    float noteSize = 0.35f - (float)((note.position - currentAudioPosition) * 0.15f);
+                    float noteSize = 0.35f - (float)((note.position - currentAudioPosition) * 0.30f);
 
-                    // TODO figure out why orange and blue aren't working as expected
+                    // TODO release note multis aren't rendering properly
                     if (note.texture == null) {
-                        if (note.isRelease & note.isMultiple) {
+                        if (note.isRelease && note.isMultiple) {
                             if (lastMultiWasBlue) {
                                 note.texture = noteReleaseMultiOrangeTexture;
-                                if (previousNote.position != note.position) {
+                                if (nextNote.position != note.position) {
                                     lastMultiWasBlue = false;
                                 }
                             } else {
                                 note.texture = noteReleaseMultiBlueTexture;
-                                if (previousNote.position != note.position) {
+                                if (nextNote.position != note.position) {
                                     lastMultiWasBlue = true;
                                 }
                             }
                         } else if (note.isMultiple) {
                             if (lastMultiWasBlue) {
                                 note.texture = noteMultiOrangeTexture;
-                                if (previousNote.position != note.position) {
+                                if (nextNote.position != note.position) {
                                     lastMultiWasBlue = false;
                                 }
                             } else {
                                 note.texture = noteMultiBlueTexture;
-                                if (previousNote.position != note.position) {
+                                if (nextNote.position != note.position) {
                                     lastMultiWasBlue = true;
                                 }
                             }
@@ -943,25 +1077,6 @@ namespace SIFAC {
                             note.texture = noteTexture;
                         }
                     }
-
-                    // TODO hold note trails
-                    /*if (note.isHold) {
-                        Note releaseNote = getReleaseNote(note);
-                        if (releaseNote.hasSpawned) {
-                            spriteBatch.Draw(texture,
-                                new Vector2(coordinates[0], coordinates[1]),
-                                null,
-                                new Color(Color.White, 175),
-                                0f,
-                                new Vector2(noteTexture.Width / 2, noteTexture.Height / 2 - graphics.PreferredBackBufferHeight),
-                                noteSize,
-                                SpriteEffects.None,
-                                0f);
-                        } else {
-                            // Indefinite trail to note spawn position
-                            
-                        }
-                    }*/
 
                     spriteBatch.Draw(note.texture,
                         new Vector2(coordinates[0], coordinates[1]),
@@ -973,8 +1088,17 @@ namespace SIFAC {
                         SpriteEffects.None,
                         0f);
                     note.hasSpawned = true;
+                } else if (note.isHold && note.hasResolved && !GetReleaseNote(note).hasResolved){
+                    spriteBatch.Draw(note.texture,
+                        hitMarkerPositions[note.lane],
+                        null,
+                        Color.White,
+                        0f,
+                        new Vector2(note.texture.Width / 2, note.texture.Height / 2 - graphics.PreferredBackBufferHeight),
+                        0.35f,
+                        SpriteEffects.None,
+                        0f);
                 }
-                previousNote = note;
             }
             spriteBatch.End();
         }
@@ -1097,7 +1221,7 @@ namespace SIFAC {
                     break;
             }
 
-            deltaY += 100;
+            deltaY += 200;
 
             float yPixelSpeed = -deltaY / noteSpeed;
             yCoord = hitMarkerPositions[lane].Y - (yPixelSpeed * timePosition);
@@ -1150,7 +1274,7 @@ namespace SIFAC {
                             note.hasResolved = true;
                             perfects++;
                             if (!note.isRelease && ++combo > maxCombo) {
-                                    maxCombo = combo;
+                                maxCombo = combo;
                             }
                             return NoteAccuracy.Perfect;
                         } else if (Math.Abs(diff) <= greatTolerance) {
@@ -1162,7 +1286,6 @@ namespace SIFAC {
                             if (!note.isRelease && ++combo > maxCombo) {
                                 maxCombo = combo;
                             }
-                            combo++;
                             return NoteAccuracy.Great;
                         } else if (Math.Abs(diff) <= goodTolerance) {
                             Console.WriteLine("Good (early by " + diff + ")");

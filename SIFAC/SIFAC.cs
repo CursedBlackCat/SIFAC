@@ -182,11 +182,22 @@ namespace SIFAC {
     /// This is the main type for your game.
     /// </summary>
     public class SIFAC : Game {
+        /*GLOBALLY USED VARIABLES*/
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-
         GameState currentGameState = GameState.SongSelectScreen;
+        SpriteFont defaultFont;
+        KeyboardState previousState;
+        List<PlayableSong> songs = new List<PlayableSong>();
+        PlayableSong currentSong;
 
+        /*TITLE SCREEN VARIABLES*/
+
+        /*NESICA CHECK SCREEN VARIABLES*/
+
+        /*GROUP SELECT SCREEN VARIABLES*/
+
+        /*SONG SELECT SCREEN VARIABLES*/
         Texture2D tooltipL3L4;
         Texture2D[] mainTooltips = new Texture2D[5]; //0 to 4, left to right. These are the main 5 tooltips on the song select screen spanning L2 through R2.
         Texture2D tooltipR3R4;
@@ -195,6 +206,9 @@ namespace SIFAC {
         int songSelectPage = 0; // Each page has 5 songs, and page n is indices n*5 through n*5+4 of songs
         PlayableSong[] menuChoices = new PlayableSong[5]; // Currently displayed song choices. 0 to 4, left to right. Index 0 corresonds to L2, 1 to L1, etc, and 4 to R2.
 
+        /*LIVE PREPARATION SCREEN VARIABLES*/
+
+        /*LIVE SCREEN VARIABLES*/
         Texture2D noteTexture;
         Texture2D noteMultiBlueTexture;
         Texture2D noteMultiOrangeTexture;
@@ -203,9 +217,6 @@ namespace SIFAC {
         Texture2D noteReleaseMultiOrangeTexture;
         Texture2D hitMarkerTexture;
         Texture2D noteTrailTexture;
-
-        SpriteFont defaultFont;
-
         Vector2[] hitMarkerPositions = new Vector2[9];
         float[] xOffsets = new float[4];
         float[] yOffsets = new float[4];
@@ -214,17 +225,8 @@ namespace SIFAC {
         Vector2 noteSpawnPosition;
         List<NoteTrail> noteTrailPositions = new List<NoteTrail>();
         Boolean lastMultiWasBlue = false; // Used to toggle between orange and blue multi notes
-
-        KeyboardState previousState;
-
-        List<PlayableSong> songs = new List<PlayableSong>();
-        PlayableSong currentSong;
-
         VideoPlayer bgVideoPlayer;
-        Boolean playVideo = true;
-
         SoundEffect[] hitSoundEffects = new SoundEffect[4]; // hitSoundEffects[0] is perfect, 1 is great, 2 is good, 3 is bad
-
         int combo = 0;
         int maxCombo = 0;
         int perfects = 0;
@@ -233,8 +235,11 @@ namespace SIFAC {
         int bads = 0;
         int misses = 0;
 
+        /*RESULT SCREEN VARIABLES*/
 
-        /* CONFIG */
+        /*GOODBYE SCREEN VARIABLES*/
+
+        /* CONFIG VARIABLES */
         // Timing tolerences, in seconds. Hitting a note at its time + or - each of these values gets the corresponding accuracy rating.
         readonly double perfectTolerance = 0.1;
         readonly double greatTolerance = 0.2;
@@ -253,7 +258,7 @@ namespace SIFAC {
         Boolean autoplay = false;
 
         // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be play fullscreen at 1080p.
-        Boolean fullscreen = true;
+        Boolean fullscreen = false;
         /* END CONFIG */
 
         public SIFAC() {
@@ -348,144 +353,32 @@ namespace SIFAC {
             // Load fonts
             defaultFont = Content.Load<SpriteFont>("fonts/DefaultFont");
 
-            // Load beatmap assets
+
             // TODO use a for loop of some sort to dynamically load all beatmaps
+
+            // Load Believe Again
             Video video = Content.Load<Video>("beatmap_assets/Believe Again/video");
             Texture2D cover = Content.Load<Texture2D>("beatmap_assets/Believe Again/cover");
-
-            // Load the notes
-            // TODO put the beatmap loading code into its own helper method
-            string[] lines = System.IO.File.ReadAllLines(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Beatmaps\believe_again.txt");
-            Note[] beatmap = new Note[lines.Length];
-            for (int i = 0; i < lines.Length; i++) {
-                string[] data = lines[i].Split('/');
-                int lane = -1;
-                switch (data[1]) {
-                    case "L4":
-                        lane = 0;
-                        break;
-                    case "L3":
-                        lane = 1;
-                        break;
-                    case "L2":
-                        lane = 2;
-                        break;
-                    case "L1":
-                        lane = 3;
-                        break;
-                    case "C":
-                        lane = 4;
-                        break;
-                    case "R1":
-                        lane = 5;
-                        break;
-                    case "R2":
-                        lane = 6;
-                        break;
-                    case "R3":
-                        lane = 7;
-                        break;
-                    case "R4":
-                        lane = 8;
-                        break;
-                    default:
-                        throw new BeatmapParseException("Invalid note lane " + data[1]);
-                }
-                beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]));
-            }
-            Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
+            Note[] beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Beatmaps\believe_again.txt");
 
             songs.Add(new PlayableSong("Believe Again", cover, video, beatmap, 11f/30f));
 
-            // Load the calibration beatmap
-            lines = System.IO.File.ReadAllLines(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Calibration\beatmap.txt");
-            beatmap = new Note[lines.Length];
-            for (int i = 0; i < lines.Length; i++) {
-                string[] data = lines[i].Split('/');
-                int lane = -1;
-                switch (data[1]) {
-                    case "L4":
-                        lane = 0;
-                        break;
-                    case "L3":
-                        lane = 1;
-                        break;
-                    case "L2":
-                        lane = 2;
-                        break;
-                    case "L1":
-                        lane = 3;
-                        break;
-                    case "C":
-                        lane = 4;
-                        break;
-                    case "R1":
-                        lane = 5;
-                        break;
-                    case "R2":
-                        lane = 6;
-                        break;
-                    case "R3":
-                        lane = 7;
-                        break;
-                    case "R4":
-                        lane = 8;
-                        break;
-                    default:
-                        throw new BeatmapParseException("Invalid note lane " + data[1]);
-                }
-                beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]));
-            }
-            beatmap = beatmap.OrderBy(x => x.position).ToArray();
+            // Load Jump up HIGH!!
+            video = Content.Load<Video>("beatmap_assets/Jump up HIGH!!/video");
+            cover = Content.Load<Texture2D>("beatmap_assets/Jump up HIGH!!/cover");
+            beatmap = new Note[0];
+            songs.Add(new PlayableSong("Jump up HIGH!!", cover, video, beatmap));
 
+            // Load the calibration beatmap
+            beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Calibration\beatmap.txt");
             songs.Add(new PlayableSong("Calibration", Content.Load<Texture2D>("beatmap_assets/Calibration/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), beatmap));
 
             // Load the hold calibration beatmap
-            lines = System.IO.File.ReadAllLines(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Hold Note Calibration\beatmap.txt");
-            beatmap = new Note[lines.Length];
-            for (int i = 0; i < lines.Length; i++) {
-                string[] data = lines[i].Split('/');
-                int lane = -1;
-                switch (data[1]) {
-                    case "L4":
-                        lane = 0;
-                        break;
-                    case "L3":
-                        lane = 1;
-                        break;
-                    case "L2":
-                        lane = 2;
-                        break;
-                    case "L1":
-                        lane = 3;
-                        break;
-                    case "C":
-                        lane = 4;
-                        break;
-                    case "R1":
-                        lane = 5;
-                        break;
-                    case "R2":
-                        lane = 6;
-                        break;
-                    case "R3":
-                        lane = 7;
-                        break;
-                    case "R4":
-                        lane = 8;
-                        break;
-                    default:
-                        throw new BeatmapParseException("Invalid note lane " + data[1]);
-                }
-                beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]));
-            }
-            Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
-
+            beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Hold Note Calibration\beatmap.txt");
             songs.Add(new PlayableSong("Hold Note Calibration", Content.Load<Texture2D>("beatmap_assets/Hold Note Calibration/cover"), Content.Load<Song>("beatmap_assets/Hold Note Calibration/song"), beatmap));
 
-            // Add placeholder songs
-            songs.Add(new PlayableSong("Placeholder 3", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0]));
-            songs.Add(new PlayableSong("Placeholder 4", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0]));
+            // Add placeholder song
+            songs.Add(new PlayableSong("Placeholder", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0]));
         }
 
         /// <summary>
@@ -587,10 +480,9 @@ namespace SIFAC {
                 currentSong = menuChoices[highlightedMenuElement];
                 if (currentSong.type == PlayableSongType.Music && MediaPlayer.State == MediaState.Stopped) {
                     MediaPlayer.Play(currentSong.music);
-                } else if (playVideo & bgVideoPlayer.State == MediaState.Stopped) {
+                } else if (bgVideoPlayer.State == MediaState.Stopped) {
                     bgVideoPlayer.Volume = 0.2f;
                     bgVideoPlayer.Play(currentSong.backgroundMv);
-                    playVideo = false;
                 }
                 currentGameState = GameState.LiveScreen; // TODO add live preparation screen
             }
@@ -820,6 +712,12 @@ namespace SIFAC {
                 bads = 0;
                 misses = 0;
 
+                // Reset the beatmap
+                foreach (Note note in currentSong.beatmap) {
+                    note.hasSpawned = false;
+                    note.hasResolved = false;
+                }
+
                 currentGameState = GameState.SongSelectScreen;
             }
             previousState = kstate;
@@ -986,13 +884,18 @@ namespace SIFAC {
 
             spriteBatch.Begin();
 
-            // Draw the video
+            // Draw the video frame
             if (currentSong.type == PlayableSongType.Video) {
-                spriteBatch.Draw(
+                try {
+                    spriteBatch.Draw(
                     bgVideoPlayer.GetTexture(),
                     new Rectangle(0, 0, graphics.PreferredBackBufferWidth, graphics.PreferredBackBufferHeight),
                     Color.White
-                );
+                    );
+                } catch (InvalidOperationException) {
+                    // Console.WriteLine("Platform returned null texture");
+                    // TODO fix this
+                }
             }
             
             // Draw the hit positions
@@ -1146,6 +1049,54 @@ namespace SIFAC {
         }
 
         /// <summary>
+        /// Loads beatmap data from a txt file into an array of Notes.
+        /// </summary>
+        /// <param name="filepath">The path to the txt file.</param>
+        /// <returns>An array of Notes in the beatmap.</returns>
+        private Note[] LoadBeatmap(String filepath) {
+            string[] lines = System.IO.File.ReadAllLines(filepath);
+            Note[] beatmap = new Note[lines.Length];
+            for (int i = 0; i < lines.Length; i++) {
+                string[] data = lines[i].Split('/');
+                int lane = -1;
+                switch (data[1]) {
+                    case "L4":
+                        lane = 0;
+                        break;
+                    case "L3":
+                        lane = 1;
+                        break;
+                    case "L2":
+                        lane = 2;
+                        break;
+                    case "L1":
+                        lane = 3;
+                        break;
+                    case "C":
+                        lane = 4;
+                        break;
+                    case "R1":
+                        lane = 5;
+                        break;
+                    case "R2":
+                        lane = 6;
+                        break;
+                    case "R3":
+                        lane = 7;
+                        break;
+                    case "R4":
+                        lane = 8;
+                        break;
+                    default:
+                        throw new BeatmapParseException("Invalid note lane " + data[1]);
+                }
+                beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]));
+            }
+            Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
+            return beatmap;
+        }
+
+        /// <summary>
         /// This helper method calculates where a note should be drawn on the screen.
         /// </summary>
         /// <param name="songPosition">The current audio time, in seconds.</param>
@@ -1221,7 +1172,7 @@ namespace SIFAC {
                     break;
             }
 
-            deltaY += 200;
+            deltaY += graphics.PreferredBackBufferHeight / 3.6f;
 
             float yPixelSpeed = -deltaY / noteSpeed;
             yCoord = hitMarkerPositions[lane].Y - (yPixelSpeed * timePosition);

@@ -66,6 +66,23 @@
 /processorParam:Quality=Best
 /build:beatmap_assets/Hold Note Calibration/song.mp3
 
+#begin beatmap_assets/Jump up HIGH!!/cover.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:beatmap_assets/Jump up HIGH!!/cover.png
+
+#begin beatmap_assets/Jump up HIGH!!/video.mp4
+/importer:H264Importer
+/processor:VideoProcessor
+/build:beatmap_assets/Jump up HIGH!!/video.mp4
+
 #begin beatmap_assets/Placeholder/cover.png
 /importer:TextureImporter
 /processor:TextureProcessor

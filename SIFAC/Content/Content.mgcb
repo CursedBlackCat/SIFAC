@@ -30,6 +30,42 @@
 /processor:VideoProcessor
 /build:beatmap_assets/Believe Again/video.mp4
 
+#begin beatmap_assets/Calibration/cover.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:beatmap_assets/Calibration/cover.png
+
+#begin beatmap_assets/Calibration/song.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:beatmap_assets/Calibration/song.mp3
+
+#begin beatmap_assets/Hold Note Calibration/cover.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:beatmap_assets/Hold Note Calibration/cover.png
+
+#begin beatmap_assets/Hold Note Calibration/song.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:beatmap_assets/Hold Note Calibration/song.mp3
+
 #begin beatmap_assets/Placeholder/cover.png
 /importer:TextureImporter
 /processor:TextureProcessor

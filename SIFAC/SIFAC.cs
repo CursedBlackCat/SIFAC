@@ -49,14 +49,39 @@ namespace SIFAC {
         // TODO start moving assets for the beatmap here
         public string title;
         public Texture2D coverArt;
-        public Video backgroundMv;
+        public Song music = null;
+        public Video backgroundMv = null;
         public Note[] beatmap;
+        public PlayableSongType type;
 
+        /// <summary>
+        /// Constructs a PlayableSong with a background video, using the video as the beatmap's song source.
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="cover"></param>
+        /// <param name="v"></param>
+        /// <param name="map"></param>
         public PlayableSong(string title, Texture2D cover, Video v, Note[] map) {
             this.title = title;
             coverArt = cover;
             backgroundMv = v;
             beatmap = map;
+            type = PlayableSongType.Video;
+        }
+
+        /// <summary>
+        /// Constructs a PlayableSong with no background video.
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="cover"></param>
+        /// <param name="v"></param>
+        /// <param name="map"></param>
+        public PlayableSong(string title, Texture2D cover, Song s, Note[] map) {
+            this.title = title;
+            coverArt = cover;
+            music = s;
+            beatmap = map;
+            type = PlayableSongType.Music;
         }
     }
 
@@ -78,6 +103,11 @@ namespace SIFAC {
         Bad,
         Miss,
         None // Returns when you attempt to hit a note before it comes into range
+    }
+
+    public enum PlayableSongType {
+        Video,
+        Music
     }
 
     /// <summary>
@@ -125,6 +155,8 @@ namespace SIFAC {
 
         SoundEffect[] hitSoundEffects = new SoundEffect[4]; // hitSoundEffects[0] is perfect, 1 is great, 2 is good, 3 is bad
 
+        int combo = 0;
+        int maxCombo = 0;
         int perfects = 0;
         int greats = 0;
         int goods = 0;
@@ -134,10 +166,10 @@ namespace SIFAC {
 
         /* CONFIG */
         // Timing tolerences, in seconds. Hitting a note at its time + or - each of these values gets the corresponding accuracy rating.
-        readonly double perfectTolerance = 0.2;
-        readonly double greatTolerance = 0.4;
-        readonly double goodTolerance = 0.6;
-        readonly double badTolerance = 1;
+        readonly double perfectTolerance = 0.1;
+        readonly double greatTolerance = 0.2;
+        readonly double goodTolerance = 0.4;
+        readonly double badTolerance = 0.8;
         readonly double missTolerance = 1.5; // Not hitting a note after this much time elapses after its hit time will count as a miss
 
         float noteSpeed = 1f; // Note speed, represented by seconds from spawn to note hit position.
@@ -145,13 +177,13 @@ namespace SIFAC {
         // Timing offset setting, in seconds.
         // Use a timeOffset value of -0.05 for playing and -0.25 for autoplay. These values aren't perfect.
         // If too large, notes will be too early. If too small, notes will be too late.
-        double timeOffset = -0.25;     
+        double timeOffset = 0;     
 
         // Autoplay, for debug purposes
-        Boolean autoplay = true;
+        Boolean autoplay = false;
 
-        // 720p flag for debugging. Game is intended to be play fullscreen at 1080p.
-        Boolean smallWindow = true;
+        // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be play fullscreen at 1080p.
+        Boolean fullscreen = false;
         /* END CONFIG */
 
         public SIFAC() {
@@ -167,7 +199,7 @@ namespace SIFAC {
         /// </summary>
         protected override void Initialize() {
 
-            if (smallWindow) {
+            if (!fullscreen) {
                 graphics.PreferredBackBufferWidth = 1280;
                 graphics.PreferredBackBufferHeight = 720;
                 graphics.IsFullScreen = false;
@@ -236,6 +268,8 @@ namespace SIFAC {
             // Initialize the VideoPlayer
             bgVideoPlayer = new VideoPlayer();
 
+            // Initialize the MediaPlayer
+
             // Load the note hit sounds
             hitSoundEffects[0] = Content.Load<SoundEffect>("sounds/hit_perfect");
             hitSoundEffects[1] = Content.Load<SoundEffect>("sounds/hit_great");
@@ -249,7 +283,9 @@ namespace SIFAC {
             // TODO use a for loop of some sort to dynamically load all beatmaps
             Video video = Content.Load<Video>("beatmap_assets/Believe Again/video");
             Texture2D cover = Content.Load<Texture2D>("beatmap_assets/Believe Again/cover");
+
             // Load the notes
+            // TODO put the beatmap loading code into its own helper method
             string[] lines = System.IO.File.ReadAllLines(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Beatmaps\believe_again.txt");
             Note[] beatmap = new Note[lines.Length];
             for (int i = 0; i < lines.Length; i++) {
@@ -292,10 +328,95 @@ namespace SIFAC {
 
             songs.Add(new PlayableSong("Believe Again", cover, video, beatmap));
 
-            songs.Add(new PlayableSong("Placeholder 1", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), null, new Note[0]));
-            songs.Add(new PlayableSong("Placeholder 2", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), null, new Note[0]));
-            songs.Add(new PlayableSong("Placeholder 3", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), null, new Note[0]));
-            songs.Add(new PlayableSong("Placeholder 4", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), null, new Note[0]));
+            // Load the calibration beatmap
+            lines = System.IO.File.ReadAllLines(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Calibration\beatmap.txt");
+            beatmap = new Note[lines.Length];
+            for (int i = 0; i < lines.Length; i++) {
+                string[] data = lines[i].Split('/');
+                int lane = -1;
+                switch (data[1]) {
+                    case "L4":
+                        lane = 0;
+                        break;
+                    case "L3":
+                        lane = 1;
+                        break;
+                    case "L2":
+                        lane = 2;
+                        break;
+                    case "L1":
+                        lane = 3;
+                        break;
+                    case "C":
+                        lane = 4;
+                        break;
+                    case "R1":
+                        lane = 5;
+                        break;
+                    case "R2":
+                        lane = 6;
+                        break;
+                    case "R3":
+                        lane = 7;
+                        break;
+                    case "R4":
+                        lane = 8;
+                        break;
+                    default:
+                        throw new BeatmapParseException("Invalid note lane " + data[1]);
+                }
+                beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]));
+            }
+            Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
+
+            songs.Add(new PlayableSong("Calibration", Content.Load<Texture2D>("beatmap_assets/Calibration/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), beatmap));
+
+            // Load the hold calibration beatmap
+            lines = System.IO.File.ReadAllLines(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Hold Note Calibration\beatmap.txt");
+            beatmap = new Note[lines.Length];
+            for (int i = 0; i < lines.Length; i++) {
+                string[] data = lines[i].Split('/');
+                int lane = -1;
+                switch (data[1]) {
+                    case "L4":
+                        lane = 0;
+                        break;
+                    case "L3":
+                        lane = 1;
+                        break;
+                    case "L2":
+                        lane = 2;
+                        break;
+                    case "L1":
+                        lane = 3;
+                        break;
+                    case "C":
+                        lane = 4;
+                        break;
+                    case "R1":
+                        lane = 5;
+                        break;
+                    case "R2":
+                        lane = 6;
+                        break;
+                    case "R3":
+                        lane = 7;
+                        break;
+                    case "R4":
+                        lane = 8;
+                        break;
+                    default:
+                        throw new BeatmapParseException("Invalid note lane " + data[1]);
+                }
+                beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]));
+            }
+            Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
+
+            songs.Add(new PlayableSong("Hold Note Calibration", Content.Load<Texture2D>("beatmap_assets/Hold Note Calibration/cover"), Content.Load<Song>("beatmap_assets/Hold Note Calibration/song"), beatmap));
+
+            // Add placeholder songs
+            songs.Add(new PlayableSong("Placeholder 3", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0]));
+            songs.Add(new PlayableSong("Placeholder 4", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0]));
         }
 
         /// <summary>
@@ -395,7 +516,9 @@ namespace SIFAC {
             }
             if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
                 currentSong = menuChoices[highlightedMenuElement];
-                if (playVideo & bgVideoPlayer.State == MediaState.Stopped) {
+                if (currentSong.type == PlayableSongType.Music && MediaPlayer.State == MediaState.Stopped) {
+                    MediaPlayer.Play(currentSong.music);
+                } else if (playVideo & bgVideoPlayer.State == MediaState.Stopped) {
                     bgVideoPlayer.Volume = 0.2f;
                     bgVideoPlayer.Play(currentSong.backgroundMv);
                     playVideo = false;
@@ -484,30 +607,58 @@ namespace SIFAC {
             }
             previousState = kstate;
 
-            foreach (Note note in currentSong.beatmap) {
-                //AUTOPLAY CODE
-                if (autoplay && !note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset) {
-                    // Console.WriteLine("Auto");
-                    note.result = NoteAccuracy.Perfect;
-                    hitSoundEffects[0].Play(0.2f, 0f, 0f);
-                    note.hasResolved = true;
-                    perfects++;
-                }
-                //END AUTOPLAY CODE
+            if (currentSong.type == PlayableSongType.Video) { // Beatmap audio source is from video
+                foreach (Note note in currentSong.beatmap) {
+                    //AUTOPLAY CODE
+                    if (autoplay && !note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset) {
+                        // Console.WriteLine("Auto");
+                        note.result = NoteAccuracy.Perfect;
+                        hitSoundEffects[0].Play(0.2f, 0f, 0f);
+                        note.hasResolved = true;
+                        perfects++;
+                    }
+                    //END AUTOPLAY CODE
 
-                if (note.result != NoteAccuracy.None) {
-                    note.hasResolved = true;
+                    if (note.result != NoteAccuracy.None) {
+                        note.hasResolved = true;
+                    }
+                    if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds - missTolerance) { //TODO factor in time offset
+                        Console.WriteLine("Miss");
+                        note.result = NoteAccuracy.Miss;
+                        note.hasResolved = true;
+                        combo = 0;
+                        misses++;
+                    }
+                    if (bgVideoPlayer.State == MediaState.Stopped) {
+                        currentGameState = GameState.ResultScreen;
+                    }
                 }
-                if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds - missTolerance) { //TODO factor in time offset
-                    Console.WriteLine("Miss");
-                    note.result = NoteAccuracy.Miss;
-                    note.hasResolved = true;
-                    misses++;
-                }
-            }
+            } else { // Beatmap audio source is from audio file
+                foreach (Note note in currentSong.beatmap) {
+                    //AUTOPLAY CODE
+                    if (autoplay && !note.hasResolved && note.position <= MediaPlayer.PlayPosition.TotalSeconds + timeOffset) {
+                        // Console.WriteLine("Auto");
+                        note.result = NoteAccuracy.Perfect;
+                        hitSoundEffects[0].Play(0.2f, 0f, 0f);
+                        note.hasResolved = true;
+                        perfects++;
+                    }
+                    //END AUTOPLAY CODE
 
-            if (bgVideoPlayer.State == MediaState.Stopped) {
-                currentGameState = GameState.ResultScreen;
+                    if (note.result != NoteAccuracy.None) {
+                        note.hasResolved = true;
+                    }
+                    if (!note.hasResolved && note.position <= MediaPlayer.PlayPosition.TotalSeconds - missTolerance) { //TODO factor in time offset
+                        Console.WriteLine("Miss");
+                        note.result = NoteAccuracy.Miss;
+                        note.hasResolved = true;
+                        misses++;
+                    }
+                }
+
+                if (MediaPlayer.State == MediaState.Stopped) {
+                    currentGameState = GameState.ResultScreen;
+                }
             }
         }
 
@@ -548,6 +699,16 @@ namespace SIFAC {
             }
             if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
                 // TODO
+
+                // Reset the results
+                combo = 0;
+                maxCombo = 0;
+                perfects = 0;
+                greats = 0;
+                goods = 0;
+                bads = 0;
+                misses = 0;
+
                 currentGameState = GameState.SongSelectScreen;
             }
             previousState = kstate;
@@ -713,12 +874,15 @@ namespace SIFAC {
             GraphicsDevice.Clear(Color.White);
 
             spriteBatch.Begin();
-            spriteBatch.Draw(
-                bgVideoPlayer.GetTexture(),
-                new Rectangle(0, 0, graphics.PreferredBackBufferWidth, graphics.PreferredBackBufferHeight),
-                Color.White
-                );
 
+            if (currentSong.backgroundMv != null) {
+                spriteBatch.Draw(
+                    bgVideoPlayer.GetTexture(),
+                    new Rectangle(0, 0, graphics.PreferredBackBufferWidth, graphics.PreferredBackBufferHeight),
+                    Color.White
+                    );
+            }
+            
             for (int i = 0; i < 9; i++) {
                 spriteBatch.Draw(hitMarkerTexture,
                 hitMarkerPositions[i],
@@ -731,15 +895,21 @@ namespace SIFAC {
                 0f);
             }
 
-            double currentVideoPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
+            double currentAudioPosition;
+            if (currentSong.type == PlayableSongType.Video) {
+                currentAudioPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
+            } else {
+                currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
+            }
+            
             Note previousNote = new Note(-1, -1, false, false, false, 0, 0, false);
             foreach (Note note in currentSong.beatmap) {
                 if (note.hasResolved) {
                     continue;
                 }
-                if (note.position <= currentVideoPosition + noteSpeed && !note.hasResolved) {
-                    float[] coordinates = CalculateNoteCoordinates(currentVideoPosition, note);
-                    float noteSize = 0.35f - (float)((note.position - currentVideoPosition) * 0.15f);
+                if (note.position <= currentAudioPosition + noteSpeed && !note.hasResolved) {
+                    float[] coordinates = CalculateNoteCoordinates(currentAudioPosition, note);
+                    float noteSize = 0.35f - (float)((note.position - currentAudioPosition) * 0.15f);
 
                     // TODO figure out why orange and blue aren't working as expected
                     if (note.texture == null) {
@@ -836,6 +1006,11 @@ namespace SIFAC {
             spriteBatch.DrawString(defaultFont,
                                    "Miss: " + misses,
                                    new Vector2(200, 500),
+                                   Color.Black
+                                   );
+            spriteBatch.DrawString(defaultFont,
+                                   "Max Combo: " + maxCombo,
+                                   new Vector2(200, 600),
                                    Color.Black
                                    );
             spriteBatch.End();
@@ -956,46 +1131,27 @@ namespace SIFAC {
         /// <param name="down">Whether the button is being pushed or released. Should be true if pushed, otherwise false if released (used for hold note releases).</param>
         /// <returns></returns>
         private NoteAccuracy JudgeHit(int lane, Boolean down) {
+            double currentAudioPosition;
+
+            if (currentSong.type == PlayableSongType.Video) {
+                currentAudioPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
+            } else {
+                currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
+            }
+
             foreach (Note note in currentSong.beatmap) {
-                if (down && !note.isRelease) {
-                    if (note.lane == lane && note.position - bgVideoPlayer.PlayPosition.TotalSeconds <= badTolerance) {
-                        double diff = note.position - bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset;
-                        if (Math.Abs(diff) <= perfectTolerance) {
-                            Console.WriteLine("Perfect (early by " + diff + ")");
-                            hitSoundEffects[0].Play(0.2f, 0f, 0f);
-                            note.result = NoteAccuracy.Perfect;
-                            note.hasResolved = true;
-                            return NoteAccuracy.Perfect;
-                        } else if (Math.Abs(diff) <= greatTolerance) {
-                            Console.WriteLine("Great (early by " + diff + ")");
-                            hitSoundEffects[1].Play(0.2f, 0f, 0f);
-                            note.result = NoteAccuracy.Great;
-                            note.hasResolved = true;
-                            return NoteAccuracy.Great;
-                        } else if (Math.Abs(diff) <= goodTolerance) {
-                            Console.WriteLine("Good (early by " + diff + ")");
-                            hitSoundEffects[2].Play(0.2f, 0f, 0f);
-                            note.result = NoteAccuracy.Good;
-                            note.hasResolved = true;
-                            return NoteAccuracy.Good;
-                        } else if (Math.Abs(diff) <= badTolerance) {
-                            Console.WriteLine("Bad (early by " + diff + ")");
-                            hitSoundEffects[3].Play(0.2f, 0f, 0f);
-                            note.result = NoteAccuracy.Bad;
-                            note.hasResolved = true;
-                            return NoteAccuracy.Bad;
-                        }
-                    }
-                } else if (!down && note.isRelease) {
-                    // TODO this code is duplicated from above for now but needs to be separate because releases don't count for combo
-                    if (note.lane == lane && note.position - bgVideoPlayer.PlayPosition.TotalSeconds <= badTolerance) {
-                        double diff = note.position - bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset;
+                if (!note.hasResolved && ((down && !note.isRelease) || (!down && note.isRelease))) {
+                    if (note.lane == lane && note.position - currentAudioPosition <= badTolerance) {
+                        double diff = note.position - currentAudioPosition + timeOffset;
                         if (Math.Abs(diff) <= perfectTolerance) {
                             Console.WriteLine("Perfect (early by " + diff + ")");
                             hitSoundEffects[0].Play(0.2f, 0f, 0f);
                             note.result = NoteAccuracy.Perfect;
                             note.hasResolved = true;
                             perfects++;
+                            if (!note.isRelease && ++combo > maxCombo) {
+                                    maxCombo = combo;
+                            }
                             return NoteAccuracy.Perfect;
                         } else if (Math.Abs(diff) <= greatTolerance) {
                             Console.WriteLine("Great (early by " + diff + ")");
@@ -1003,6 +1159,10 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Great;
                             note.hasResolved = true;
                             greats++;
+                            if (!note.isRelease && ++combo > maxCombo) {
+                                maxCombo = combo;
+                            }
+                            combo++;
                             return NoteAccuracy.Great;
                         } else if (Math.Abs(diff) <= goodTolerance) {
                             Console.WriteLine("Good (early by " + diff + ")");
@@ -1010,6 +1170,7 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Good;
                             note.hasResolved = true;
                             goods++;
+                            combo = 0;
                             return NoteAccuracy.Good;
                         } else if (Math.Abs(diff) <= badTolerance) {
                             Console.WriteLine("Bad (early by " + diff + ")");
@@ -1017,6 +1178,7 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Bad;
                             note.hasResolved = true;
                             bads++;
+                            combo = 0;
                             return NoteAccuracy.Bad;
                         }
                     }

@@ -1185,6 +1185,9 @@ namespace SIFAC {
         }
     }
 
+    /// <summary>
+    /// Represents a playable song with a beatmap, an audio track, and possibly a background video.
+    /// </summary>
     public class PlayableSong {
         public string title;
         public Texture2D coverArt;

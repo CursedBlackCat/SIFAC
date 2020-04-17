@@ -8,178 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace SIFAC {
-    public class Note {
-        public float position; // Position of the note in seconds
-        public int lane; // 0 through 8, left to right
-        public Boolean isMultiple;
-        public Boolean isHold;
-        public Boolean isRelease;
-        public float releaseNoteSpawnTime;
-        public float parentNoteSpawnTime;
-        public Boolean hasStar;
-        public Boolean hasSpawned;
-        public NoteAccuracy result;
-        public Boolean hasResolved;
-        public Texture2D texture;
-        public Note(float pos, int lan, Boolean multiple, Boolean hold, Boolean release, float releaseNoteTime, float parentNoteTime, Boolean star) {
-            position = pos;
-            lane = lan;
-            isMultiple = multiple;
-            isHold = hold;
-            isRelease = release;
-            releaseNoteSpawnTime = releaseNoteTime;
-            parentNoteSpawnTime = parentNoteTime;
-            hasStar = star;
-            hasSpawned = false;
-            hasResolved = false;
-            result = NoteAccuracy.None;
-        }
-    }
-
-    public class NoteTrail {
-        public Vector2 position;
-        public float scale;
-        public float spawnTime;
-        public float removeTime;
-        public Note releaseNote;
-
-        public NoteTrail(Vector2 position, float scale, float spawnTime, float removeTime, Note releaseNote) {
-            this.position = position;
-            this.scale = scale;
-            this.spawnTime = spawnTime;
-            this.removeTime = removeTime;
-            this.releaseNote = releaseNote;
-        }
-    }
-
-    public class BeatmapParseException : Exception {
-        public BeatmapParseException() {
-
-        }
-
-        public BeatmapParseException(string message) {
-
-        }
-    }
-
-    public class PlayableSong {
-        // TODO start moving assets for the beatmap here
-        public string title;
-        public Texture2D coverArt;
-        public Song music = null;
-        public Video backgroundMv = null;
-        public Note[] beatmap;
-        public PlayableSongType type;
-        public float beatmapTimeOffset; // Time offset of all notes in beatmap, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.
-
-        /// <summary>
-        /// Constructs a PlayableSong with a background video, using the video as the beatmap's song source.
-        /// </summary>
-        /// <param name="title"></param>
-        /// <param name="cover"></param>
-        /// <param name="v"></param>
-        /// <param name="map"></param>
-        public PlayableSong(string title, Texture2D cover, Video v, Note[] map) {
-            this.title = title;
-            coverArt = cover;
-            backgroundMv = v;
-            beatmap = map;
-            type = PlayableSongType.Video;
-        }
-
-        /// <summary>
-        /// Constructs a PlayableSong with no background video.
-        /// </summary>
-        /// <param name="title"></param>
-        /// <param name="cover"></param>
-        /// <param name="v"></param>
-        /// <param name="map"></param>
-        public PlayableSong(string title, Texture2D cover, Song s, Note[] map) {
-            this.title = title;
-            coverArt = cover;
-            music = s;
-            beatmap = map;
-            type = PlayableSongType.Music;
-        }
-
-        /// <summary>
-        /// Constructs a PlayableSong with a time offset and a background video, using the video as the beatmap's song source.
-        /// </summary>
-        /// <param name="title"></param>
-        /// <param name="cover"></param>
-        /// <param name="v"></param>
-        /// <param name="map"></param>
-        /// <param name="offset"></param>
-        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, float offset) {
-            this.title = title;
-            coverArt = cover;
-            backgroundMv = v;
-            beatmap = map;
-            type = PlayableSongType.Video;
-            
-            foreach (Note note in beatmap) {
-                note.position += offset;
-                if (note.isHold) {
-                    note.releaseNoteSpawnTime += offset;
-                } else if (note.isRelease) {
-                    note.parentNoteSpawnTime += offset;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Constructs a PlayableSong with a time offset and no background video.
-        /// </summary>
-        /// <param name="title"></param>
-        /// <param name="cover"></param>
-        /// <param name="v"></param>
-        /// <param name="map"></param>
-        /// <param name="offset"></param>
-        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, float offset) {
-            this.title = title;
-            coverArt = cover;
-            music = s;
-            beatmap = map;
-            type = PlayableSongType.Music;
-
-            foreach (Note note in beatmap) {
-                note.position += offset;
-                if (note.isHold) {
-                    note.releaseNoteSpawnTime += offset;
-                } else if (note.isRelease) {
-                    note.parentNoteSpawnTime += offset;
-                }
-            }
-        }
-    }
-
-    public enum GameState {
-        TitleScreen,
-        NesicaCheckScreen,
-        GroupSelectScreen,
-        SongSelectScreen, // Also handles difficulty selection
-        LivePreparationScreen,
-        LiveScreen,
-        ResultScreen,
-        GoodbyeScreen
-    }
-
-    public enum NoteAccuracy {
-        Perfect,
-        Great,
-        Good,
-        Bad,
-        Miss,
-        None // Returns when you attempt to hit a note before it comes into range
-    }
-
-    public enum PlayableSongType {
-        Video,
-        Music
-    }
-
     /// <summary>
-    /// This is the main type for your game.
+    /// The main type for the game.
     /// </summary>
     public class SIFAC : Game {
         /*GLOBALLY USED VARIABLES*/
@@ -310,8 +140,7 @@ namespace SIFAC {
         }
 
         /// <summary>
-        /// LoadContent will be called once per game and is the place to load
-        /// all of your content.
+        /// Loads game assets. Called once per game.
         /// </summary>
         protected override void LoadContent() {
             // Create a new SpriteBatch, which can be used to draw textures.
@@ -386,7 +215,7 @@ namespace SIFAC {
         /// game-specific content.
         /// </summary>
         protected override void UnloadContent() {
-            // TODO: Unload any non ContentManager content here
+            
         }
 
         /// <summary>
@@ -524,11 +353,11 @@ namespace SIFAC {
                 JudgeHit(8, true);
             }
             if (kstate.IsKeyDown(Keys.Escape) & !previousState.IsKeyDown(Keys.Escape)) {
-                Console.WriteLine("Red Button Pressed");
+                // Console.WriteLine("Red Button Pressed");
                 Exit();
             }
             if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
-                Console.WriteLine("Blue Button Pressed");
+                // Console.WriteLine("Blue Button Pressed");
             }
 
             // Detect key up
@@ -560,11 +389,11 @@ namespace SIFAC {
                 JudgeHit(8, false);
             }
             if (!kstate.IsKeyDown(Keys.Escape) & previousState.IsKeyDown(Keys.Escape)) {
-                Console.WriteLine("Red Button Released");
+                // Console.WriteLine("Red Button Released");
                 Exit();
             }
             if (!kstate.IsKeyDown(Keys.Enter) & previousState.IsKeyDown(Keys.Enter)) {
-                Console.WriteLine("Blue Button Released");
+                // Console.WriteLine("Blue Button Released");
             }
             previousState = kstate;
 
@@ -604,7 +433,7 @@ namespace SIFAC {
 
                     // Handle missed notes
                     if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset - missTolerance) {
-                        Console.WriteLine("Miss");
+                        // Console.WriteLine("Miss");
                         note.result = NoteAccuracy.Miss;
                         note.hasResolved = true;
                         combo = 0;
@@ -761,23 +590,39 @@ namespace SIFAC {
             }
         }
 
+        /// <summary>
+        /// Draw method for the title screen. Called when game is on the title screen and should draw itself.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawTitleScreen(GameTime gameTime) {
             // TODO
             GraphicsDevice.Clear(Color.White);
         }
 
+        /// <summary>
+        /// Draw method for the NESiCA check select screen. Called when game is on the NESiCA check screen and should draw itself.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawNesicaCheckScreen(GameTime gameTime) {
             // TODO
             GraphicsDevice.Clear(Color.White);
         }
 
+        /// <summary>
+        /// Draw method for the group select screen. Called when game is on the group select screen and should draw itself.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawGroupSelectScreen(GameTime gameTime) {
             // TODO
             GraphicsDevice.Clear(Color.White);
         }
 
+        /// <summary>
+        /// Draw method for the song select screen. Called when game is on the song select screen and should draw itself.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawSongSelectScreen(GameTime gameTime) {
-            // TODO
+            // TODO make this look less sketchy, finish implementing screen
             GraphicsDevice.Clear(new Color(19, 232, 174));
 
             // Offsets to account for the slight curvature of the tooltips
@@ -874,11 +719,19 @@ namespace SIFAC {
             spriteBatch.End();
         }
 
+        /// <summary>
+        /// Draw method for the live preparation screen. Called when game is on the live preparation screen and should draw itself.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawLivePreparationScreen(GameTime gameTime) {
             // TODO
             GraphicsDevice.Clear(Color.White);
         }
 
+        /// <summary>
+        /// Draw method for the live screen. Called when the user is currently playing a live and the game should draw itself.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawLiveScreen(GameTime gameTime) {
             GraphicsDevice.Clear(Color.Black);
 
@@ -893,8 +746,7 @@ namespace SIFAC {
                     Color.White
                     );
                 } catch (InvalidOperationException) {
-                    // Console.WriteLine("Platform returned null texture");
-                    // TODO fix this
+                    // TODO fix this not working for Jump up HIGH!!
                 }
             }
             
@@ -1006,8 +858,12 @@ namespace SIFAC {
             spriteBatch.End();
         }
 
+        /// <summary>
+        /// Draw method for the live result screen. Called when game is on the live result screen and should draw itself.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawResultScreen(GameTime gameTime) {
-            // TODO
+            // TODO make this actually look legit
             GraphicsDevice.Clear(Color.White);
             spriteBatch.Begin();
             spriteBatch.DrawString(defaultFont, 
@@ -1043,13 +899,17 @@ namespace SIFAC {
             spriteBatch.End();
         }
 
+        /// <summary>
+        /// Draw method for the goodbye screen. Called when game is on the goodbye screen and should draw itself.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawGoodbyeScreen(GameTime gameTime) {
             // TODO
             GraphicsDevice.Clear(Color.White);
         }
 
         /// <summary>
-        /// Loads beatmap data from a txt file into an array of Notes.
+        /// Loads beatmap data from a txt file in CustomBeatmapFestival format into an array of Notes.
         /// </summary>
         /// <param name="filepath">The path to the txt file.</param>
         /// <returns>An array of Notes in the beatmap.</returns>
@@ -1203,7 +1063,7 @@ namespace SIFAC {
         /// Judges the accuracy of a hit.
         /// </summary>
         /// <param name="lane">The lane in which the button was pressed.</param>
-        /// <param name="down">Whether the button is being pushed or released. Should be true if pushed, otherwise false if released (used for hold note releases).</param>
+        /// <param name="down">Whether the button is being pushed or released. True if pushed, otherwise false if released (used for hold note releases).</param>
         /// <returns></returns>
         private NoteAccuracy JudgeHit(int lane, Boolean down) {
             double currentAudioPosition;
@@ -1219,7 +1079,7 @@ namespace SIFAC {
                     if (note.lane == lane && note.position - currentAudioPosition <= badTolerance) {
                         double diff = note.position - currentAudioPosition + timeOffset;
                         if (Math.Abs(diff) <= perfectTolerance) {
-                            Console.WriteLine("Perfect (early by " + diff + ")");
+                            // Console.WriteLine("Perfect (early by " + diff + ")");
                             hitSoundEffects[0].Play(0.2f, 0f, 0f);
                             note.result = NoteAccuracy.Perfect;
                             note.hasResolved = true;
@@ -1229,7 +1089,7 @@ namespace SIFAC {
                             }
                             return NoteAccuracy.Perfect;
                         } else if (Math.Abs(diff) <= greatTolerance) {
-                            Console.WriteLine("Great (early by " + diff + ")");
+                            // Console.WriteLine("Great (early by " + diff + ")");
                             hitSoundEffects[1].Play(0.2f, 0f, 0f);
                             note.result = NoteAccuracy.Great;
                             note.hasResolved = true;
@@ -1239,7 +1099,7 @@ namespace SIFAC {
                             }
                             return NoteAccuracy.Great;
                         } else if (Math.Abs(diff) <= goodTolerance) {
-                            Console.WriteLine("Good (early by " + diff + ")");
+                            // Console.WriteLine("Good (early by " + diff + ")");
                             hitSoundEffects[2].Play(0.2f, 0f, 0f);
                             note.result = NoteAccuracy.Good;
                             note.hasResolved = true;
@@ -1247,7 +1107,7 @@ namespace SIFAC {
                             combo = 0;
                             return NoteAccuracy.Good;
                         } else if (Math.Abs(diff) <= badTolerance) {
-                            Console.WriteLine("Bad (early by " + diff + ")");
+                            // Console.WriteLine("Bad (early by " + diff + ")");
                             hitSoundEffects[3].Play(0.2f, 0f, 0f);
                             note.result = NoteAccuracy.Bad;
                             note.hasResolved = true;
@@ -1260,5 +1120,191 @@ namespace SIFAC {
             }
             return NoteAccuracy.None;
         }
+    }
+
+    /// <summary>
+    /// Represents a note in a beatmap.
+    /// </summary>
+    public class Note {
+        public float position; // Position of the note in seconds
+        public int lane; // 0 through 8, left to right
+        public Boolean isMultiple;
+        public Boolean isHold;
+        public Boolean isRelease;
+        public float releaseNoteSpawnTime;
+        public float parentNoteSpawnTime;
+        public Boolean hasStar;
+        public Boolean hasSpawned;
+        public NoteAccuracy result;
+        public Boolean hasResolved;
+        public Texture2D texture;
+        public Note(float pos, int lan, Boolean multiple, Boolean hold, Boolean release, float releaseNoteTime, float parentNoteTime, Boolean star) {
+            position = pos;
+            lane = lan;
+            isMultiple = multiple;
+            isHold = hold;
+            isRelease = release;
+            releaseNoteSpawnTime = releaseNoteTime;
+            parentNoteSpawnTime = parentNoteTime;
+            hasStar = star;
+            hasSpawned = false;
+            hasResolved = false;
+            result = NoteAccuracy.None;
+        }
+    }
+
+    /// <summary>
+    /// Represents a part of a trail behind a hold note.
+    /// </summary>
+    public class NoteTrail {
+        public Vector2 position;
+        public float scale;
+        public float spawnTime;
+        public float removeTime;
+        public Note releaseNote;
+
+        public NoteTrail(Vector2 position, float scale, float spawnTime, float removeTime, Note releaseNote) {
+            this.position = position;
+            this.scale = scale;
+            this.spawnTime = spawnTime;
+            this.removeTime = removeTime;
+            this.releaseNote = releaseNote;
+        }
+    }
+
+    /// <summary>
+    /// Thrown when a beatmap data file is corrupt or has invalid data and cannot be parsed into a beatmap.
+    /// </summary>
+    public class BeatmapParseException : Exception {
+        public BeatmapParseException() {
+
+        }
+
+        public BeatmapParseException(string message) {
+
+        }
+    }
+
+    public class PlayableSong {
+        public string title;
+        public Texture2D coverArt;
+        public Song music = null;
+        public Video backgroundMv = null;
+        public Note[] beatmap;
+        public PlayableSongType type;
+        public float beatmapTimeOffset; // Time offset of all notes in beatmap, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.
+
+        /// <summary>
+        /// Constructs a PlayableSong with a background video, using the video as the beatmap's song source.
+        /// </summary>
+        /// <param name="title">The title of the song.</param>
+        /// <param name="cover">The cover art for the song.</param>
+        /// <param name="v">The background video for the song. The song will use the audio track from the video file for the song.</param>
+        /// <param name="map">The beatmap of the song.</param>
+        public PlayableSong(string title, Texture2D cover, Video v, Note[] map) {
+            this.title = title;
+            coverArt = cover;
+            backgroundMv = v;
+            beatmap = map;
+            type = PlayableSongType.Video;
+        }
+
+        /// <summary>
+        /// Constructs a PlayableSong with no background video.
+        /// </summary>
+        /// <param name="title">The title of the song.</param>
+        /// <param name="cover">The cover art for the song.</param>
+        /// <param name="s">The audio for the song.</param>
+        /// <param name="map">The beatmap of the song.</param>
+        public PlayableSong(string title, Texture2D cover, Song s, Note[] map) {
+            this.title = title;
+            coverArt = cover;
+            music = s;
+            beatmap = map;
+            type = PlayableSongType.Music;
+        }
+        /// <summary>
+        /// Constructs a PlayableSong with a time offset and a background video, using the video as the beatmap's song source.
+        /// </summary>
+        /// <param name="title">The title of the song.</param>
+        /// <param name="cover">The cover art for the song.</param>
+        /// <param name="v">The background video for the song. The song will use the audio track from the video file for the song.</param>
+        /// <param name="map">The beatmap of the song.</param>
+        /// <param name="offset">The time offset, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.</param>
+        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, float offset) {
+            this.title = title;
+            coverArt = cover;
+            backgroundMv = v;
+            beatmap = map;
+            type = PlayableSongType.Video;
+
+            foreach (Note note in beatmap) {
+                note.position += offset;
+                if (note.isHold) {
+                    note.releaseNoteSpawnTime += offset;
+                } else if (note.isRelease) {
+                    note.parentNoteSpawnTime += offset;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Constructs a PlayableSong with a time offset and no background video.
+        /// </summary>
+        /// <param name="title">The title of the song.</param>
+        /// <param name="cover">The cover art for the song.</param>
+        /// <param name="s">The audio for the song.</param>
+        /// <param name="map">The beatmap of the song.</param>
+        /// <param name="offset">The time offset, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.</param>
+        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, float offset) {
+            this.title = title;
+            coverArt = cover;
+            music = s;
+            beatmap = map;
+            type = PlayableSongType.Music;
+
+            foreach (Note note in beatmap) {
+                note.position += offset;
+                if (note.isHold) {
+                    note.releaseNoteSpawnTime += offset;
+                } else if (note.isRelease) {
+                    note.parentNoteSpawnTime += offset;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// The various game states/screens possible during gameplay.
+    /// </summary>
+    public enum GameState {
+        TitleScreen,
+        NesicaCheckScreen,
+        GroupSelectScreen,
+        SongSelectScreen,
+        LivePreparationScreen,
+        LiveScreen,
+        ResultScreen,
+        GoodbyeScreen
+    }
+
+    /// <summary>
+    /// The possible note hit judgement results.
+    /// </summary>
+    public enum NoteAccuracy {
+        Perfect,
+        Great,
+        Good,
+        Bad,
+        Miss,
+        None // Returns when you attempt to hit a note before it comes into range
+    }
+
+    /// <summary>
+    /// The source types from which a PlayableSong acn pull its audio.
+    /// </summary>
+    public enum PlayableSongType {
+        Video,
+        Music
     }
 }

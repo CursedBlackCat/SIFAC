@@ -102,6 +102,13 @@
 /processorParam:TextureFormat=Compressed
 /build:fonts/DefaultFont.spritefont
 
+#begin fonts/ReglisseFill.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:fonts/ReglisseFill.spritefont
+
 #begin live_ui/progress_gauge/Progress_Gauge_Base.png
 /importer:TextureImporter
 /processor:TextureProcessor

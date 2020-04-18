@@ -17,6 +17,7 @@ namespace SIFAC {
         SpriteBatch spriteBatch;
         GameState currentGameState = GameState.SongSelectScreen;
         SpriteFont defaultFont;
+        SpriteFont reglisseFillFont;
         KeyboardState previousState;
         List<PlayableSong> songs = new List<PlayableSong>();
         PlayableSong currentSong;
@@ -103,15 +104,14 @@ namespace SIFAC {
         float noteSpeed = 1f; // Note speed, represented by seconds from spawn to note hit position.
 
         // Timing offset setting, in seconds.
-        // Use a timeOffset value of -0.05 for playing and -0.25 for autoplay. These values aren't perfect.
         // If too large, notes will be too early. If too small, notes will be too late.
         double timeOffset = 0;     
 
         // Autoplay, for debug purposes
-        Boolean autoplay = true;
+        Boolean autoplay = false;
 
         // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be played fullscreen at 1080p.
-        Boolean fullscreen = true;
+        Boolean fullscreen = false;
 
         float noteHitVolume = 0.1f;
         /* END CONFIG */
@@ -235,6 +235,7 @@ namespace SIFAC {
 
             // Load fonts
             defaultFont = Content.Load<SpriteFont>("fonts/DefaultFont");
+            reglisseFillFont = Content.Load<SpriteFont>("fonts/ReglisseFill");
 
 
             // TODO use a for loop of some sort to dynamically load all beatmaps
@@ -879,6 +880,18 @@ namespace SIFAC {
             } else {
                 currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
             }
+
+            Vector2 stringMeasure = reglisseFillFont.MeasureString(combo + " COMBO");
+            // Draw combo counter
+            spriteBatch.DrawString(reglisseFillFont,
+                combo + " COMBO",
+                new Vector2(graphics.PreferredBackBufferWidth / 2, 600),
+                new Color(222, 117 ,199),
+                0f,
+                new Vector2(stringMeasure.X / 2, stringMeasure.Y / 2),
+                1f,
+                SpriteEffects.None,
+                0f);
 
             // Draw the trails
             foreach (NoteTrail trail in noteTrailPositions) {

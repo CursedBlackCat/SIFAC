@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Audio;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Xna.Framework.Content;
 
 namespace SIFAC {
     /// <summary>
@@ -45,8 +46,19 @@ namespace SIFAC {
         Texture2D noteReleaseTexture;
         Texture2D noteReleaseMultiBlueTexture;
         Texture2D noteReleaseMultiOrangeTexture;
+        Texture2D noteStarTexture;
+        Texture2D noteStarMultiBlueTexture;
+        Texture2D noteStarMultiOrangeTexture;
         Texture2D hitMarkerTexture;
         Texture2D noteTrailTexture;
+        Texture2D starL;
+        Texture2D starO;
+        Texture2D starV;
+        Texture2D starE;
+        Texture2D starI;
+        Texture2D starExclamation;
+        Texture2D starEmpty;
+        Texture2D[] starTextures = new Texture2D[9]; // For convenience of spritebatch drawing
         Vector2[] hitMarkerPositions = new Vector2[9];
         float[] xOffsets = new float[4];
         float[] yOffsets = new float[4];
@@ -64,6 +76,7 @@ namespace SIFAC {
         int goods = 0;
         int bads = 0;
         int misses = 0;
+        int stars = 0;
 
         /*RESULT SCREEN VARIABLES*/
 
@@ -87,8 +100,8 @@ namespace SIFAC {
         // Autoplay, for debug purposes
         Boolean autoplay = true;
 
-        // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be play fullscreen at 1080p.
-        Boolean fullscreen = false;
+        // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be played fullscreen at 1080p.
+        Boolean fullscreen = true;
         /* END CONFIG */
 
         public SIFAC() {
@@ -167,8 +180,29 @@ namespace SIFAC {
             noteReleaseTexture = Content.Load<Texture2D>("notes/Note_Hold_Release");
             noteReleaseMultiBlueTexture = Content.Load<Texture2D>("notes/Note_Hold_Release_Multi_Blue");
             noteReleaseMultiOrangeTexture = Content.Load<Texture2D>("notes/Note_Hold_Release_Multi_Orange");
+            noteStarTexture = Content.Load<Texture2D>("notes/Note_Star");
+            noteStarMultiBlueTexture = Content.Load<Texture2D>("notes/Note_Star_Multi_Blue");
+            noteStarMultiOrangeTexture = Content.Load<Texture2D>("notes/Note_Star_Multi_Orange");
             hitMarkerTexture = Content.Load<Texture2D>("notes/HitMarker");
             noteTrailTexture = Content.Load<Texture2D>("notes/Note_Trail");
+            starL = Content.Load<Texture2D>("stars/Star_L");
+            starO = Content.Load<Texture2D>("stars/Star_O");
+            starV = Content.Load<Texture2D>("stars/Star_V");
+            starE = Content.Load<Texture2D>("stars/Star_E");
+            starI = Content.Load<Texture2D>("stars/Star_I");
+            starExclamation = Content.Load<Texture2D>("stars/Star_!");
+            starEmpty = Content.Load<Texture2D>("stars/Star_Empty");
+
+            starTextures[0] = starL;
+            starTextures[1] = starO;
+            starTextures[2] = starV;
+            starTextures[3] = starE;
+            starTextures[4] = starL;
+            starTextures[5] = starI;
+            starTextures[6] = starV;
+            starTextures[7] = starE;
+            starTextures[8] = starExclamation;
+
 
             // Initialize the VideoPlayer
             bgVideoPlayer = new VideoPlayer();
@@ -402,11 +436,18 @@ namespace SIFAC {
                 foreach (Note note in currentSong.beatmap) {
                     //AUTOPLAY CODE
                     if (autoplay && !note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset) {
-                        // Console.WriteLine("Auto");
+                        // Console.WriteLine("Perfect (Auto)");
                         note.result = NoteAccuracy.Perfect;
                         hitSoundEffects[0].Play(0.2f, 0f, 0f);
                         note.hasResolved = true;
                         perfects++;
+                        if (++combo > maxCombo) {
+                            maxCombo = combo;
+                        }
+                        if (note.hasStar) {
+                            stars++;
+                            // TODO play star note sound
+                        }
                     }
                     //END AUTOPLAY CODE
 
@@ -540,6 +581,7 @@ namespace SIFAC {
                 goods = 0;
                 bads = 0;
                 misses = 0;
+                stars = 0;
 
                 // Reset the beatmap
                 foreach (Note note in currentSong.beatmap) {
@@ -781,7 +823,7 @@ namespace SIFAC {
                     new Vector2(noteTrailTexture.Width / 2, noteTrailTexture.Height / 2 - graphics.PreferredBackBufferHeight),
                     trail.scale,
                     SpriteEffects.None,
-                    0f); ;
+                    0f);
             }
 
             // Draw the notes
@@ -801,8 +843,23 @@ namespace SIFAC {
                     float noteSize = 0.35f - (float)((note.position - currentAudioPosition) * 0.30f);
 
                     // TODO release note multis aren't rendering properly
+                    // TODO this if statement hell is disgusting, refactor this
                     if (note.texture == null) {
-                        if (note.isRelease && note.isMultiple) {
+                        if (note.hasStar && !note.isMultiple) {
+                            note.texture = noteStarTexture;
+                        } else if (note.hasStar && note.isMultiple) {
+                            if (lastMultiWasBlue) {
+                                note.texture = noteStarMultiOrangeTexture;
+                                if (nextNote.position != note.position) {
+                                    lastMultiWasBlue = false;
+                                }
+                            } else {
+                                note.texture = noteStarMultiBlueTexture;
+                                if (nextNote.position != note.position) {
+                                    lastMultiWasBlue = true;
+                                }
+                            }
+                        } else if (note.isRelease && note.isMultiple) {
                             if (lastMultiWasBlue) {
                                 note.texture = noteReleaseMultiOrangeTexture;
                                 if (nextNote.position != note.position) {
@@ -855,6 +912,37 @@ namespace SIFAC {
                         0f);
                 }
             }
+
+            // Draw the star gauge
+
+            // Draw the star counter's empty stars
+            for (int i = 0; i < 9; i++) {
+                float x = graphics.PreferredBackBufferHeight + 75 * i;
+                spriteBatch.Draw(starEmpty,
+                    new Vector2(x, 50),
+                    null,
+                    Color.White,
+                    0f,
+                    new Vector2(starEmpty.Width / 2, starEmpty.Height / 2),
+                    0.15f,
+                    SpriteEffects.None,
+                    0f);
+            }
+            
+            // Draw any accumulated stars
+            for (int i = 0; i < stars; i++) {
+                float x = graphics.PreferredBackBufferHeight + 75 * i;
+                spriteBatch.Draw(starTextures[i],
+                    new Vector2(x, 50),
+                    null,
+                    Color.White,
+                    0f,
+                    new Vector2(starEmpty.Width / 2, starEmpty.Height / 2),
+                    0.15f,
+                    SpriteEffects.None,
+                    0f);
+            }
+
             spriteBatch.End();
         }
 
@@ -1087,6 +1175,10 @@ namespace SIFAC {
                             if (++combo > maxCombo) {
                                 maxCombo = combo;
                             }
+                            if (note.hasStar) {
+                                stars++;
+                                // TODO play star sound
+                            }
                             return NoteAccuracy.Perfect;
                         } else if (Math.Abs(diff) <= greatTolerance) {
                             // Console.WriteLine("Great (early by " + diff + ")");
@@ -1097,6 +1189,10 @@ namespace SIFAC {
                             if (++combo > maxCombo) {
                                 maxCombo = combo;
                             }
+                            if (note.hasStar) {
+                                stars++;
+                                // TODO play star sound
+                            }
                             return NoteAccuracy.Great;
                         } else if (Math.Abs(diff) <= goodTolerance) {
                             // Console.WriteLine("Good (early by " + diff + ")");
@@ -1104,6 +1200,10 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Good;
                             note.hasResolved = true;
                             goods++;
+                            if (note.hasStar) {
+                                stars++;
+                                // TODO play star sound
+                            }
                             combo = 0;
                             return NoteAccuracy.Good;
                         } else if (Math.Abs(diff) <= badTolerance) {
@@ -1112,6 +1212,10 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Bad;
                             note.hasResolved = true;
                             bads++;
+                            if (note.hasStar) {
+                                stars++;
+                                // TODO play star sound
+                            }
                             combo = 0;
                             return NoteAccuracy.Bad;
                         }

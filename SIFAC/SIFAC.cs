@@ -57,6 +57,13 @@ namespace SIFAC {
         Texture2D starI;
         Texture2D starExclamation;
         Texture2D starEmpty;
+        Texture2D scoreGaugeBase;
+        Texture2D scoreGaugeD;
+        Texture2D scoreGaugeC;
+        Texture2D scoreGaugeB;
+        Texture2D scoreGaugeA;
+        Texture2D scoreGaugeS;
+        Texture2D scoreGaugeFrame;
         Texture2D[] starTextures = new Texture2D[9]; // For convenience of spritebatch drawing
         Vector2[] hitMarkerPositions = new Vector2[9];
         float[] xOffsets = new float[4];
@@ -76,6 +83,8 @@ namespace SIFAC {
         int bads = 0;
         int misses = 0;
         int stars = 0;
+        int score = 0;
+        ScoreRank rank = ScoreRank.D;
 
         /*RESULT SCREEN VARIABLES*/
 
@@ -87,7 +96,7 @@ namespace SIFAC {
         readonly double greatTolerance = 0.2;
         readonly double goodTolerance = 0.4;
         readonly double badTolerance = 0.8;
-        readonly double missTolerance = 1.5; // Not hitting a note after this much time elapses after its hit time will count as a miss
+        readonly double missTolerance = 1; // Not hitting a note after this much time elapses after its hit time will count as a miss
 
         float noteSpeed = 1f; // Note speed, represented by seconds from spawn to note hit position.
 
@@ -186,14 +195,20 @@ namespace SIFAC {
             noteStarMultiOrangeTexture = Content.Load<Texture2D>("notes/Note_Star_Multi_Orange");
             hitMarkerTexture = Content.Load<Texture2D>("notes/HitMarker");
             noteTrailTexture = Content.Load<Texture2D>("notes/Note_Trail");
-            starL = Content.Load<Texture2D>("stars/Star_L");
-            starO = Content.Load<Texture2D>("stars/Star_O");
-            starV = Content.Load<Texture2D>("stars/Star_V");
-            starE = Content.Load<Texture2D>("stars/Star_E");
-            starI = Content.Load<Texture2D>("stars/Star_I");
-            starExclamation = Content.Load<Texture2D>("stars/Star_!");
-            starEmpty = Content.Load<Texture2D>("stars/Star_Empty");
-
+            starL = Content.Load<Texture2D>("live_ui/stars/Star_L");
+            starO = Content.Load<Texture2D>("live_ui/stars/Star_O");
+            starV = Content.Load<Texture2D>("live_ui/stars/Star_V");
+            starE = Content.Load<Texture2D>("live_ui/stars/Star_E");
+            starI = Content.Load<Texture2D>("live_ui/stars/Star_I");
+            starExclamation = Content.Load<Texture2D>("live_ui/stars/Star_!");
+            starEmpty = Content.Load<Texture2D>("live_ui/stars/Star_Empty");
+            scoreGaugeBase = Content.Load<Texture2D>("live_ui/score_gauge/Score_Gauge_Base");
+            scoreGaugeD = Content.Load<Texture2D>("live_ui/score_gauge/Score_Gauge_BelowC");
+            scoreGaugeC = Content.Load<Texture2D>("live_ui/score_gauge/Score_Gauge_CtoB");
+            scoreGaugeB = Content.Load<Texture2D>("live_ui/score_gauge/Score_Gauge_BtoA");
+            scoreGaugeA = Content.Load<Texture2D>("live_ui/score_gauge/Score_Gauge_AtoS");
+            scoreGaugeS = Content.Load<Texture2D>("live_ui/score_gauge/Score_Gauge_AboveS");
+            scoreGaugeFrame = Content.Load<Texture2D>("live_ui/score_gauge/Score_Gauge_Frame");
             starTextures[0] = starL;
             starTextures[1] = starO;
             starTextures[2] = starV;
@@ -225,24 +240,24 @@ namespace SIFAC {
             Texture2D cover = Content.Load<Texture2D>("beatmap_assets/Believe Again/cover");
             Note[] beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Believe Again\beatmap.txt");
 
-            songs.Add(new PlayableSong("Believe Again", cover, video, beatmap, 11f/30f));
+            songs.Add(new PlayableSong("Believe Again", cover, video, beatmap, 11f/30f, 10000, 40000, 70000, 80000, 100000, 120000)); // TODO adjust target scores as appropriate
 
             // Load Jump up HIGH!!
             video = Content.Load<Video>("beatmap_assets/Jump up HIGH!!/video");
             cover = Content.Load<Texture2D>("beatmap_assets/Jump up HIGH!!/cover");
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Jump up HIGH!!\beatmap.txt");
-            songs.Add(new PlayableSong("Jump up HIGH!!", cover, video, beatmap, -1f/12f));
+            songs.Add(new PlayableSong("Jump up HIGH!!", cover, video, beatmap, -1f/12f, 10000, 40000, 70000, 80000, 100000, 120000)); // TODO adjust target scores as appropriate
 
             // Load the calibration beatmap
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Calibration\beatmap.txt");
-            songs.Add(new PlayableSong("Calibration", Content.Load<Texture2D>("beatmap_assets/Calibration/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), beatmap));
+            songs.Add(new PlayableSong("Calibration", Content.Load<Texture2D>("beatmap_assets/Calibration/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), beatmap, 0, 0, 0, 0, 0, 0));
 
             // Load the hold calibration beatmap
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Hold Note Calibration\beatmap.txt");
-            songs.Add(new PlayableSong("Hold Note Calibration", Content.Load<Texture2D>("beatmap_assets/Hold Note Calibration/cover"), Content.Load<Song>("beatmap_assets/Hold Note Calibration/song"), beatmap));
+            songs.Add(new PlayableSong("Hold Note Calibration", Content.Load<Texture2D>("beatmap_assets/Hold Note Calibration/cover"), Content.Load<Song>("beatmap_assets/Hold Note Calibration/song"), beatmap, 0, 0, 0, 0, 0, 0));
 
             // Add placeholder song
-            songs.Add(new PlayableSong("Placeholder", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0]));
+            songs.Add(new PlayableSong("Placeholder", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0], 0, 0, 0, 0, 0, 0));
         }
 
         /// <summary>
@@ -316,7 +331,7 @@ namespace SIFAC {
                 // TODO
             }
             if (kstate.IsKeyDown(Keys.D) & !previousState.IsKeyDown(Keys.D)) {
-                highlightedMenuElement = 0;
+                highlightedMenuElement = 0; //TODO play highlighted song's preview
             }
             if (kstate.IsKeyDown(Keys.F) & !previousState.IsKeyDown(Keys.F)) {
                 highlightedMenuElement = 1;
@@ -442,6 +457,7 @@ namespace SIFAC {
                         hitSoundEffects[0].Play(noteHitVolume, 0f, 0f);
                         note.hasResolved = true;
                         perfects++;
+                        score += 300; // TODO adjust score as appropriate
                         if (++combo > maxCombo) {
                             maxCombo = combo;
                         }
@@ -478,10 +494,33 @@ namespace SIFAC {
                         // Console.WriteLine("Miss");
                         note.result = NoteAccuracy.Miss;
                         note.hasResolved = true;
+                        if (note.isHold) {
+                            GetReleaseNote(note).hasResolved = true;
+                            GetReleaseNote(note).result = NoteAccuracy.Miss;
+                            misses++;
+                        }
                         combo = 0;
                         misses++;
                     }                   
                 }
+
+                // Update score rank
+                if (score >= currentSong.sssScore) {
+                    rank = ScoreRank.SSS;
+                } else if (score >= currentSong.ssScore) {
+                    rank = ScoreRank.SS;
+                } else if (score >= currentSong.sScore) {
+                    rank = ScoreRank.S;
+                } else if (score >= currentSong.aScore) {
+                    rank = ScoreRank.A;
+                } else if (score >= currentSong.bScore) {
+                    rank = ScoreRank.B;
+                } else if (score >= currentSong.cScore) {
+                    rank = ScoreRank.C;
+                } else {
+                    rank = ScoreRank.D;
+                }
+
                 // Detect if song is over
                 if (bgVideoPlayer.State == MediaState.Stopped) {
                     currentGameState = GameState.ResultScreen;
@@ -522,13 +561,37 @@ namespace SIFAC {
                     }
 
                     // Handle misses
-                    if (!note.hasResolved && note.position <= MediaPlayer.PlayPosition.TotalSeconds - missTolerance) { //TODO factor in time offset
+                    if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset - missTolerance) {
                         Console.WriteLine("Miss");
                         note.result = NoteAccuracy.Miss;
                         note.hasResolved = true;
+                        if (note.isHold) {
+                            GetReleaseNote(note).hasResolved = true;
+                            GetReleaseNote(note).result = NoteAccuracy.Miss;
+                            misses++;
+                        }
+                        combo = 0;
                         misses++;
                     }
                 }
+
+                // Update score rank
+                if(score >= currentSong.sssScore) {
+                    rank = ScoreRank.SSS;
+                } else if (score >= currentSong.ssScore) {
+                    rank = ScoreRank.SS;
+                } else if (score >= currentSong.sScore) {
+                    rank = ScoreRank.S;
+                } else if (score >= currentSong.aScore) {
+                    rank = ScoreRank.A;
+                } else if (score >= currentSong.bScore) {
+                    rank = ScoreRank.B;
+                } else if (score >= currentSong.cScore) {
+                    rank = ScoreRank.C;
+                } else {
+                    rank = ScoreRank.D;
+                }
+
                 // Detect if song is over
                 if (MediaPlayer.State == MediaState.Stopped) {
                     currentGameState = GameState.ResultScreen;
@@ -580,6 +643,8 @@ namespace SIFAC {
                 bads = 0;
                 misses = 0;
                 stars = 0;
+                score = 0;
+                rank = ScoreRank.D;
 
                 // Reset the beatmap
                 foreach (Note note in currentSong.beatmap) {
@@ -941,6 +1006,77 @@ namespace SIFAC {
                     0f);
             }
 
+            // Draw the score gauge
+            // Draw the base
+            spriteBatch.Draw(scoreGaugeBase,
+                    Vector2.Zero,
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    0.30f,
+                    SpriteEffects.None,
+                    0f);
+
+            // Draw the gauge
+            Texture2D gaugeTexture;
+            int baseWidth; // The "0" x coordinate for each meter should be the top of the previous rank
+            if (rank == ScoreRank.D) {
+                gaugeTexture = scoreGaugeD;
+                baseWidth = 0;
+            } else if (rank == ScoreRank.C) {
+                gaugeTexture = scoreGaugeC;
+                baseWidth = scoreGaugeD.Width;
+            } else if (rank == ScoreRank.B) {
+                gaugeTexture = scoreGaugeB;
+                baseWidth = scoreGaugeC.Width;
+            } else if (rank == ScoreRank.A) {
+                gaugeTexture = scoreGaugeA;
+                baseWidth = scoreGaugeB.Width;
+            } else {
+                gaugeTexture = scoreGaugeS;
+                baseWidth = scoreGaugeA.Width;
+            }
+
+            float scorePercent; // % of the way from current rank to next one
+
+            if (rank == ScoreRank.D) {
+                scorePercent = (float)score / currentSong.cScore;
+            } else if (rank == ScoreRank.C) { 
+                scorePercent = (float)(score - currentSong.cScore) / (currentSong.bScore - currentSong.cScore);
+            } else if (rank == ScoreRank.B) {
+                scorePercent = (float)(score - currentSong.bScore) / (currentSong.aScore - currentSong.bScore);
+            } else if (rank == ScoreRank.A) {
+                scorePercent = (float)(score - currentSong.aScore) / (currentSong.sScore - currentSong.aScore);
+            } else {
+                scorePercent = (float)(score - currentSong.sScore) / (currentSong.ssScore - currentSong.sScore);
+            }
+
+            if (scorePercent > 1) {
+                scorePercent = 1;
+            }
+
+            spriteBatch.Draw(gaugeTexture,
+                    Vector2.Zero,
+                    new Rectangle(0, 0, baseWidth + (int) (scorePercent * (gaugeTexture.Width - baseWidth)), gaugeTexture.Height),
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    0.30f,
+                    SpriteEffects.None,
+                    0f);
+
+            // Draw the frame
+            spriteBatch.Draw(scoreGaugeFrame,
+                    Vector2.Zero,
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    0.30f,
+                    SpriteEffects.None,
+                    0f);
+
             spriteBatch.End();
         }
 
@@ -1170,6 +1306,7 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Perfect;
                             note.hasResolved = true;
                             perfects++;
+                            score += 300; // TODO adjust score as appropriate and factor in "star mode"
                             if (++combo > maxCombo) {
                                 maxCombo = combo;
                             }
@@ -1184,12 +1321,20 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Great;
                             note.hasResolved = true;
                             greats++;
+                            score += 150; // TODO adjust score as appropriate and factor in "star mode"
                             if (++combo > maxCombo) {
                                 maxCombo = combo;
                             }
                             if (note.hasStar) {
                                 stars++;
                                 // TODO play star sound
+                            }
+                            if (!down && note.isHold) { // TODO make sure this code doesn't intefere with short holds
+                                Note releaseNote = GetReleaseNote(note);
+                                releaseNote.hasResolved = true;
+                                releaseNote.hasSpawned = true;
+                                releaseNote.result = NoteAccuracy.Miss;
+                                misses++;
                             }
                             return NoteAccuracy.Great;
                         } else if (Math.Abs(diff) <= goodTolerance) {
@@ -1198,9 +1343,17 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Good;
                             note.hasResolved = true;
                             goods++;
+                            score += 100; // TODO adjust score as appropriate and factor in "star mode"
                             if (note.hasStar) {
                                 stars++;
                                 // TODO play star sound
+                            }
+                            if (!down && note.isHold) { // TODO make sure this code doesn't intefere with short holds
+                                Note releaseNote = GetReleaseNote(note);
+                                releaseNote.hasResolved = true;
+                                releaseNote.hasSpawned = true;
+                                releaseNote.result = NoteAccuracy.Miss;
+                                misses++;
                             }
                             combo = 0;
                             return NoteAccuracy.Good;
@@ -1210,9 +1363,17 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Bad;
                             note.hasResolved = true;
                             bads++;
+                            score += 50; // TODO adjust score as appropriate and factor in "star mode"
                             if (note.hasStar) {
                                 stars++;
                                 // TODO play star sound
+                            }
+                            if (!down && note.isHold) { // TODO make sure this code doesn't intefere with short holds
+                                Note releaseNote = GetReleaseNote(note);
+                                releaseNote.hasResolved = true;
+                                releaseNote.hasSpawned = true;
+                                releaseNote.result = NoteAccuracy.Miss;
+                                misses++;
                             }
                             combo = 0;
                             return NoteAccuracy.Bad;
@@ -1298,6 +1459,12 @@ namespace SIFAC {
         public Note[] beatmap;
         public PlayableSongType type;
         public float beatmapTimeOffset; // Time offset of all notes in beatmap, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.
+        public int cScore;
+        public int bScore;
+        public int aScore;
+        public int sScore;
+        public int ssScore;
+        public int sssScore;
 
         /// <summary>
         /// Constructs a PlayableSong with a background video, using the video as the beatmap's song source.
@@ -1306,12 +1473,24 @@ namespace SIFAC {
         /// <param name="cover">The cover art for the song.</param>
         /// <param name="v">The background video for the song. The song will use the audio track from the video file for the song.</param>
         /// <param name="map">The beatmap of the song.</param>
-        public PlayableSong(string title, Texture2D cover, Video v, Note[] map) {
+        /// <param name="cScore">The minimum score required for a C score rank.</param>
+        /// <param name="bScore">The minimum score required for a B score rank.</param>
+        /// <param name="aScore">The minimum score required for an A score rank.</param>
+        /// <param name="sScore">The minimum score required for an S score rank.</param>
+        /// <param name="ssScore">The minimum score required for an SS score rank.</param>
+        /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
+        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
             this.title = title;
             coverArt = cover;
             backgroundMv = v;
             beatmap = map;
             type = PlayableSongType.Video;
+            this.cScore = cScore;
+            this.bScore = bScore;
+            this.aScore = aScore;
+            this.sScore = sScore;
+            this.ssScore = ssScore;
+            this.sssScore = sssScore;
         }
 
         /// <summary>
@@ -1321,12 +1500,24 @@ namespace SIFAC {
         /// <param name="cover">The cover art for the song.</param>
         /// <param name="s">The audio for the song.</param>
         /// <param name="map">The beatmap of the song.</param>
-        public PlayableSong(string title, Texture2D cover, Song s, Note[] map) {
+        /// <param name="cScore">The minimum score required for a C score rank.</param>
+        /// <param name="bScore">The minimum score required for a B score rank.</param>
+        /// <param name="aScore">The minimum score required for an A score rank.</param>
+        /// <param name="sScore">The minimum score required for an S score rank.</param>
+        /// <param name="ssScore">The minimum score required for an SS score rank.</param>
+        /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
+        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
             this.title = title;
             coverArt = cover;
             music = s;
             beatmap = map;
             type = PlayableSongType.Music;
+            this.cScore = cScore;
+            this.bScore = bScore;
+            this.aScore = aScore;
+            this.sScore = sScore;
+            this.ssScore = ssScore;
+            this.sssScore = sssScore;
         }
         /// <summary>
         /// Constructs a PlayableSong with a time offset and a background video, using the video as the beatmap's song source.
@@ -1336,12 +1527,24 @@ namespace SIFAC {
         /// <param name="v">The background video for the song. The song will use the audio track from the video file for the song.</param>
         /// <param name="map">The beatmap of the song.</param>
         /// <param name="offset">The time offset, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.</param>
-        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, float offset) {
+        /// <param name="cScore">The minimum score required for a C score rank.</param>
+        /// <param name="bScore">The minimum score required for a B score rank.</param>
+        /// <param name="aScore">The minimum score required for an A score rank.</param>
+        /// <param name="sScore">The minimum score required for an S score rank.</param>
+        /// <param name="ssScore">The minimum score required for an SS score rank.</param>
+        /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
+        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, float offset, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
             this.title = title;
             coverArt = cover;
             backgroundMv = v;
             beatmap = map;
             type = PlayableSongType.Video;
+            this.cScore = cScore;
+            this.bScore = bScore;
+            this.aScore = aScore;
+            this.sScore = sScore;
+            this.ssScore = ssScore;
+            this.sssScore = sssScore;
 
             foreach (Note note in beatmap) {
                 note.position += offset;
@@ -1361,12 +1564,24 @@ namespace SIFAC {
         /// <param name="s">The audio for the song.</param>
         /// <param name="map">The beatmap of the song.</param>
         /// <param name="offset">The time offset, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.</param>
-        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, float offset) {
+        /// <param name="cScore">The minimum score required for a C score rank.</param>
+        /// <param name="bScore">The minimum score required for a B score rank.</param>
+        /// <param name="aScore">The minimum score required for an A score rank.</param>
+        /// <param name="sScore">The minimum score required for an S score rank.</param>
+        /// <param name="ssScore">The minimum score required for an SS score rank.</param>
+        /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
+        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, float offset, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
             this.title = title;
             coverArt = cover;
             music = s;
             beatmap = map;
             type = PlayableSongType.Music;
+            this.cScore = cScore;
+            this.bScore = bScore;
+            this.aScore = aScore;
+            this.sScore = sScore;
+            this.ssScore = ssScore;
+            this.sssScore = sssScore;
 
             foreach (Note note in beatmap) {
                 note.position += offset;
@@ -1411,5 +1626,15 @@ namespace SIFAC {
     public enum PlayableSongType {
         Video,
         Music
+    }
+
+    public enum ScoreRank {
+        SSS,
+        SS,
+        S,
+        A,
+        B,
+        C,
+        D
     }
 }

@@ -11,7 +11,7 @@ This project is being worked on by:
 
 ## Project Status
 ### Game Client
-The game client still has much work to be done. One beatmap is currently playable, as well as two debugging beatmaps.
+The game client still has much work to be done. Two beatmaps are currently playable, as well as two debugging beatmaps.
 
 To-do (based on program flow of official arcade machines):
 - [ ] Title screen

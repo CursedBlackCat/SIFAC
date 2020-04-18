@@ -6,7 +6,6 @@ using Microsoft.Xna.Framework.Audio;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Xna.Framework.Content;
 
 namespace SIFAC {
     /// <summary>
@@ -101,7 +100,9 @@ namespace SIFAC {
         Boolean autoplay = true;
 
         // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be played fullscreen at 1080p.
-        Boolean fullscreen = true;
+        Boolean fullscreen = false;
+
+        float noteHitVolume = 0.1f;
         /* END CONFIG */
 
         public SIFAC() {
@@ -438,7 +439,7 @@ namespace SIFAC {
                     if (autoplay && !note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset) {
                         // Console.WriteLine("Perfect (Auto)");
                         note.result = NoteAccuracy.Perfect;
-                        hitSoundEffects[0].Play(0.2f, 0f, 0f);
+                        hitSoundEffects[0].Play(noteHitVolume, 0f, 0f);
                         note.hasResolved = true;
                         perfects++;
                         if (++combo > maxCombo) {
@@ -1168,7 +1169,7 @@ namespace SIFAC {
                         double diff = note.position - currentAudioPosition + timeOffset;
                         if (Math.Abs(diff) <= perfectTolerance) {
                             // Console.WriteLine("Perfect (early by " + diff + ")");
-                            hitSoundEffects[0].Play(0.2f, 0f, 0f);
+                            hitSoundEffects[0].Play(noteHitVolume, 0f, 0f);
                             note.result = NoteAccuracy.Perfect;
                             note.hasResolved = true;
                             perfects++;
@@ -1182,7 +1183,7 @@ namespace SIFAC {
                             return NoteAccuracy.Perfect;
                         } else if (Math.Abs(diff) <= greatTolerance) {
                             // Console.WriteLine("Great (early by " + diff + ")");
-                            hitSoundEffects[1].Play(0.2f, 0f, 0f);
+                            hitSoundEffects[1].Play(noteHitVolume, 0f, 0f);
                             note.result = NoteAccuracy.Great;
                             note.hasResolved = true;
                             greats++;
@@ -1196,7 +1197,7 @@ namespace SIFAC {
                             return NoteAccuracy.Great;
                         } else if (Math.Abs(diff) <= goodTolerance) {
                             // Console.WriteLine("Good (early by " + diff + ")");
-                            hitSoundEffects[2].Play(0.2f, 0f, 0f);
+                            hitSoundEffects[2].Play(noteHitVolume, 0f, 0f);
                             note.result = NoteAccuracy.Good;
                             note.hasResolved = true;
                             goods++;
@@ -1208,7 +1209,7 @@ namespace SIFAC {
                             return NoteAccuracy.Good;
                         } else if (Math.Abs(diff) <= badTolerance) {
                             // Console.WriteLine("Bad (early by " + diff + ")");
-                            hitSoundEffects[3].Play(0.2f, 0f, 0f);
+                            hitSoundEffects[3].Play(noteHitVolume, 0f, 0f);
                             note.result = NoteAccuracy.Bad;
                             note.hasResolved = true;
                             bads++;

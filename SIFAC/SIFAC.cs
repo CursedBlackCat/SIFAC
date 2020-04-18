@@ -85,7 +85,7 @@ namespace SIFAC {
         double timeOffset = 0;     
 
         // Autoplay, for debug purposes
-        Boolean autoplay = false;
+        Boolean autoplay = true;
 
         // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be play fullscreen at 1080p.
         Boolean fullscreen = false;
@@ -188,15 +188,15 @@ namespace SIFAC {
             // Load Believe Again
             Video video = Content.Load<Video>("beatmap_assets/Believe Again/video");
             Texture2D cover = Content.Load<Texture2D>("beatmap_assets/Believe Again/cover");
-            Note[] beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Beatmaps\believe_again.txt");
+            Note[] beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Believe Again\beatmap.txt");
 
             songs.Add(new PlayableSong("Believe Again", cover, video, beatmap, 11f/30f));
 
             // Load Jump up HIGH!!
             video = Content.Load<Video>("beatmap_assets/Jump up HIGH!!/video");
             cover = Content.Load<Texture2D>("beatmap_assets/Jump up HIGH!!/cover");
-            beatmap = new Note[0];
-            songs.Add(new PlayableSong("Jump up HIGH!!", cover, video, beatmap));
+            beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Jump up HIGH!!\beatmap.txt");
+            songs.Add(new PlayableSong("Jump up HIGH!!", cover, video, beatmap, -1f/12f));
 
             // Load the calibration beatmap
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Calibration\beatmap.txt");
@@ -746,7 +746,7 @@ namespace SIFAC {
                     Color.White
                     );
                 } catch (InvalidOperationException) {
-                    // TODO fix this not working for Jump up HIGH!!
+                    Console.WriteLine("Platform returned a null texture");
                 }
             }
             
@@ -1084,7 +1084,7 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Perfect;
                             note.hasResolved = true;
                             perfects++;
-                            if (!note.isRelease && ++combo > maxCombo) {
+                            if (++combo > maxCombo) {
                                 maxCombo = combo;
                             }
                             return NoteAccuracy.Perfect;
@@ -1094,7 +1094,7 @@ namespace SIFAC {
                             note.result = NoteAccuracy.Great;
                             note.hasResolved = true;
                             greats++;
-                            if (!note.isRelease && ++combo > maxCombo) {
+                            if (++combo > maxCombo) {
                                 maxCombo = combo;
                             }
                             return NoteAccuracy.Great;

@@ -15,12 +15,32 @@ The game client still has much work to be done. One beatmap is currently playabl
 
 To-do (based on program flow of official arcade machines):
 - [ ] Title screen
+  - [ ] Recreate "look and feel" of official game
 - [ ] Group select
+  - [ ] Display and select groups
+  - [ ] Recreate "look and feel" of official game
 - [ ] Song select
+  - [x] Display song list
+  - [x] Select song
+  - [ ] Song difficulties
+  - [ ] Song categories
+  - [ ] Special beatmaps (Plus/Combo/Switch)
+  - [ ] Recreate "look and feel" of official game
 - [ ] Live preparation screen
-- [x] Live gameplay
+  - [ ] Option menu
+  - [ ] Recreate "look and feel" of official game
+- [ ] Live gameplay
+  - [x] Background video
+  - [x] Note hit accuracy judgement
+  - [x] Star notes
+  - [ ] Scoring
 - [ ] Result screen
+  - [x] Track and show Perfect/Great/Good/Bad/Miss count
+  - [x] Track and show max combo
+  - [ ] Calculate and show score
+  - [ ] Recreate "look and feel" of official game
 - [ ] Goodbye screen
+  - [ ] Recreate "look and feel" of official game
 
 Long-term goals (subject to change):
 - [ ] NFC reader integration for NESiCA cards

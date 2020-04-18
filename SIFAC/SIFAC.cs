@@ -881,18 +881,6 @@ namespace SIFAC {
                 currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
             }
 
-            Vector2 stringMeasure = reglisseFillFont.MeasureString(combo + " COMBO");
-            // Draw combo counter
-            spriteBatch.DrawString(reglisseFillFont,
-                combo + " COMBO",
-                new Vector2(graphics.PreferredBackBufferWidth / 2, 600),
-                new Color(222, 117 ,199),
-                0f,
-                new Vector2(stringMeasure.X / 2, stringMeasure.Y / 2),
-                1f,
-                SpriteEffects.None,
-                0f);
-
             // Draw the trails
             foreach (NoteTrail trail in noteTrailPositions) {
                 spriteBatch.Draw(noteTrailTexture,
@@ -905,6 +893,18 @@ namespace SIFAC {
                     SpriteEffects.None,
                     0f);
             }
+
+            // Draw combo counter
+            Vector2 stringMeasure = reglisseFillFont.MeasureString(combo + " COMBO");
+            spriteBatch.DrawString(reglisseFillFont,
+                combo + " COMBO",
+                new Vector2(graphics.PreferredBackBufferWidth / 2, 600),
+                new Color(222, 117, 199),
+                0f,
+                new Vector2(stringMeasure.X / 2, stringMeasure.Y / 2),
+                1f,
+                SpriteEffects.None,
+                0f);
 
             // Draw the notes
             for (int i = 0; i < currentSong.beatmap.Length; i++) {

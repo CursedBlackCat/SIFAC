@@ -57,6 +57,7 @@ namespace SIFAC {
         Texture2D starI;
         Texture2D starExclamation;
         Texture2D starEmpty;
+        Texture2D[] starTextures = new Texture2D[9]; // For convenience of spritebatch drawing
         Texture2D scoreGaugeBase;
         Texture2D scoreGaugeD;
         Texture2D scoreGaugeC;
@@ -64,7 +65,8 @@ namespace SIFAC {
         Texture2D scoreGaugeA;
         Texture2D scoreGaugeS;
         Texture2D scoreGaugeFrame;
-        Texture2D[] starTextures = new Texture2D[9]; // For convenience of spritebatch drawing
+        Texture2D progressGaugeBase;
+        Texture2D progressGaugeRing;
         Vector2[] hitMarkerPositions = new Vector2[9];
         float[] xOffsets = new float[4];
         float[] yOffsets = new float[4];
@@ -109,7 +111,7 @@ namespace SIFAC {
         Boolean autoplay = true;
 
         // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be played fullscreen at 1080p.
-        Boolean fullscreen = false;
+        Boolean fullscreen = true;
 
         float noteHitVolume = 0.1f;
         /* END CONFIG */
@@ -209,6 +211,8 @@ namespace SIFAC {
             scoreGaugeA = Content.Load<Texture2D>("live_ui/score_gauge/Score_Gauge_AtoS");
             scoreGaugeS = Content.Load<Texture2D>("live_ui/score_gauge/Score_Gauge_AboveS");
             scoreGaugeFrame = Content.Load<Texture2D>("live_ui/score_gauge/Score_Gauge_Frame");
+            progressGaugeBase = Content.Load<Texture2D>("live_ui/progress_gauge/Progress_Gauge_Base");
+            progressGaugeRing = Content.Load<Texture2D>("live_ui/progress_gauge/Progress_Gauge_Ring");
             starTextures[0] = starL;
             starTextures[1] = starO;
             starTextures[2] = starV;
@@ -240,13 +244,13 @@ namespace SIFAC {
             Texture2D cover = Content.Load<Texture2D>("beatmap_assets/Believe Again/cover");
             Note[] beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Believe Again\beatmap.txt");
 
-            songs.Add(new PlayableSong("Believe Again", cover, video, beatmap, 11f/30f, 10000, 40000, 70000, 80000, 100000, 120000)); // TODO adjust target scores as appropriate
+            songs.Add(new PlayableSong("Believe Again", cover, video, beatmap, 11f/30f, 40000, 70000, 90000, 100000, 150000, 250000)); // TODO adjust target scores as appropriate
 
             // Load Jump up HIGH!!
             video = Content.Load<Video>("beatmap_assets/Jump up HIGH!!/video");
             cover = Content.Load<Texture2D>("beatmap_assets/Jump up HIGH!!/cover");
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Jump up HIGH!!\beatmap.txt");
-            songs.Add(new PlayableSong("Jump up HIGH!!", cover, video, beatmap, -1f/12f, 10000, 40000, 70000, 80000, 100000, 120000)); // TODO adjust target scores as appropriate
+            songs.Add(new PlayableSong("Jump up HIGH!!", cover, video, beatmap, -1f/12f, 40000, 70000, 90000, 100000, 150000, 250000)); // TODO adjust target scores as appropriate
 
             // Load the calibration beatmap
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Calibration\beatmap.txt");
@@ -1056,6 +1060,7 @@ namespace SIFAC {
                 scorePercent = 1;
             }
 
+            // Draw the score gauge
             spriteBatch.Draw(gaugeTexture,
                     Vector2.Zero,
                     new Rectangle(0, 0, baseWidth + (int) (scorePercent * (gaugeTexture.Width - baseWidth)), gaugeTexture.Height),
@@ -1066,7 +1071,7 @@ namespace SIFAC {
                     SpriteEffects.None,
                     0f);
 
-            // Draw the frame
+            // Draw the score gauge frame
             spriteBatch.Draw(scoreGaugeFrame,
                     Vector2.Zero,
                     null,
@@ -1077,7 +1082,29 @@ namespace SIFAC {
                     SpriteEffects.None,
                     0f);
 
+            // Draw the progress gauge base
+            spriteBatch.Draw(progressGaugeBase,
+                    new Vector2(graphics.PreferredBackBufferWidth / 2, 150),
+                    null,
+                    Color.White,
+                    0f,
+                    new Vector2(progressGaugeBase.Width / 2, progressGaugeBase.Height / 2),
+                    0.25f,
+                    SpriteEffects.None,
+                    0f);
+
+            // Draw the static progress gauge ring (Monogame doesn't support circular progress bars/circle "slices", may implement this in another way later)
+            spriteBatch.Draw(progressGaugeRing,
+                    new Vector2(graphics.PreferredBackBufferWidth / 2, 150),
+                    null,
+                    Color.White,
+                    0f,
+                    new Vector2(progressGaugeRing.Width / 2, progressGaugeRing.Height / 2),
+                    0.25f,
+                    SpriteEffects.None,
+                    0f);
             spriteBatch.End();
+
         }
 
         /// <summary>

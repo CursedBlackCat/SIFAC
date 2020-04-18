@@ -102,6 +102,30 @@
 /processorParam:TextureFormat=Compressed
 /build:fonts/DefaultFont.spritefont
 
+#begin live_ui/progress_gauge/Progress_Gauge_Base.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:live_ui/progress_gauge/Progress_Gauge_Base.png
+
+#begin live_ui/progress_gauge/Progress_Gauge_Ring.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:live_ui/progress_gauge/Progress_Gauge_Ring.png
+
 #begin live_ui/score_gauge/Score_Gauge_AboveS.png
 /importer:TextureImporter
 /processor:TextureProcessor

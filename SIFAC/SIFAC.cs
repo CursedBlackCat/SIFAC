@@ -537,7 +537,6 @@ namespace SIFAC {
         }
 
         void UpdateResultScreen(GameTime gameTime) {
-            // TODO
             var kstate = Keyboard.GetState();
             // Detect key down
             if (kstate.IsKeyDown(Keys.A) & !previousState.IsKeyDown(Keys.A)) {
@@ -572,8 +571,6 @@ namespace SIFAC {
                 Exit();
             }
             if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
-                // TODO
-
                 // Reset the results
                 combo = 0;
                 maxCombo = 0;

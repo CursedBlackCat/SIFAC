@@ -18,6 +18,8 @@ namespace SIFAC {
         GameState currentGameState = GameState.ResultScreen; // currently set to results screen for debugging purposes
         SpriteFont defaultFont;
         SpriteFont reglisseFillFont;
+        SpriteFont multicoloreFont;
+        SpriteFont delfinoFont;
         KeyboardState previousState;
         List<PlayableSong> songs = new List<PlayableSong>();
         PlayableSong currentSong;
@@ -90,9 +92,12 @@ namespace SIFAC {
         ScoreRank rank = ScoreRank.D;
 
         /*RESULT SCREEN VARIABLES*/
+        Texture2D resultTexture;
         Texture2D noteCountBaseTexture;
         Texture2D scoreDisplayBaseTexture;
         Texture2D songTitleBaseTexture;
+        Texture2D[] accuracyLabelTextures = new Texture2D[5]; // // accuracyLabelTextures[0] is perfect, 1 is great, 2 is good, 3 is bad. 4 is miss
+
 
         /*GOODBYE SCREEN VARIABLES*/
 
@@ -104,7 +109,7 @@ namespace SIFAC {
         readonly double badTolerance = 0.8;
         readonly double missTolerance = 1; // Not hitting a note after this much time elapses after its hit time will count as a miss
 
-        float noteSpeed = 1f; // Note speed, represented by seconds from spawn to note hit position.
+        float noteSpeed = 1f; // Note speed, represented by seconds from spawn to note hit position.a
 
         // Timing offset setting, in seconds.
         // If too large, notes will be too early. If too small, notes will be too late.
@@ -114,7 +119,7 @@ namespace SIFAC {
         Boolean autoplay = false;
 
         // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be played fullscreen at 1080p.
-        Boolean fullscreen = false;
+        Boolean fullscreen = true;
 
         float noteHitVolume = 0.1f;
         /* END CONFIG */
@@ -226,9 +231,15 @@ namespace SIFAC {
             starTextures[7] = starE;
             starTextures[8] = starExclamation;
 
+            resultTexture = Content.Load<Texture2D>("results_ui/Result");
             noteCountBaseTexture = Content.Load<Texture2D>("results_ui/Note_Count_Base");
             scoreDisplayBaseTexture = Content.Load<Texture2D>("results_ui/Score_Display_Base");
             songTitleBaseTexture = Content.Load<Texture2D>("results_ui/Song_Title_Base");
+            accuracyLabelTextures[0] = Content.Load<Texture2D>("results_ui/note_labels/Perfect");
+            accuracyLabelTextures[1] = Content.Load<Texture2D>("results_ui/note_labels/Great");
+            accuracyLabelTextures[2] = Content.Load<Texture2D>("results_ui/note_labels/Good");
+            accuracyLabelTextures[3] = Content.Load<Texture2D>("results_ui/note_labels/Bad");
+            accuracyLabelTextures[4] = Content.Load<Texture2D>("results_ui/note_labels/Miss");
 
 
             // Initialize the VideoPlayer
@@ -243,6 +254,8 @@ namespace SIFAC {
             // Load fonts
             defaultFont = Content.Load<SpriteFont>("fonts/DefaultFont");
             reglisseFillFont = Content.Load<SpriteFont>("fonts/ReglisseFill");
+            multicoloreFont = Content.Load<SpriteFont>("fonts/Multicolore");
+            delfinoFont = Content.Load<SpriteFont>("fonts/Delfino");
 
 
             // TODO use a for loop of some sort to dynamically load all beatmaps
@@ -270,6 +283,8 @@ namespace SIFAC {
 
             // Add placeholder song
             songs.Add(new PlayableSong("Placeholder", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0], 0, 0, 0, 0, 0, 0));
+
+            currentSong = songs[1]; // TODO remove this after debugging result screen
         }
 
         /// <summary>
@@ -1132,77 +1147,147 @@ namespace SIFAC {
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawResultScreen(GameTime gameTime) {
-            // TODO make this actually look legit
             GraphicsDevice.Clear(new Color(19, 232, 174));
             spriteBatch.Begin();
-            // Display the song title
-            spriteBatch.Draw(songTitleBaseTexture,
-                    new Vector2(0, 50),
+
+            // Draw the result title text
+            spriteBatch.Draw(resultTexture,
+                    Vector2.Zero,
                     null,
                     Color.White,
                     0f,
                     Vector2.Zero,
-                    0.40f,
+                    graphics.PreferredBackBufferHeight / 4000f,
+                    SpriteEffects.None,
+                    0f);
+
+            // Display the song title
+            spriteBatch.Draw(songTitleBaseTexture,
+                    new Vector2(0, graphics.PreferredBackBufferHeight / 7.2f),
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    graphics.PreferredBackBufferHeight / 1800f,
+                    SpriteEffects.None,
+                    0f);
+
+            spriteBatch.DrawString(delfinoFont,
+                currentSong.title,
+                new Vector2(graphics.PreferredBackBufferHeight / (720f / 180), graphics.PreferredBackBufferHeight / (720f / 115)),
+                Color.White,
+                0,
+                Vector2.Zero,
+                graphics.PreferredBackBufferHeight / 1800f,
+                SpriteEffects.None,
+                0f);
+
+            // Display the song album art
+            int squareSize = graphics.PreferredBackBufferHeight / 6;
+            Texture2D albumArtBaseSquare = new Texture2D(graphics.GraphicsDevice, squareSize, squareSize);
+
+            Color[] data = new Color[squareSize * squareSize];
+            for (int i = 0; i < data.Length; ++i) {
+                data[i] = new Color(206, 69, 123);
+            }
+            albumArtBaseSquare.SetData(data);
+
+            spriteBatch.Draw(albumArtBaseSquare,
+                new Vector2(graphics.PreferredBackBufferHeight / 24, graphics.PreferredBackBufferHeight / 9),
+                Color.White);
+
+            float offset = (squareSize - (graphics.PreferredBackBufferHeight / 1800f * currentSong.coverArt.Width)) / 2f; // Used to center the album art
+            spriteBatch.Draw(currentSong.coverArt,
+                    new Vector2(graphics.PreferredBackBufferHeight / 24 + offset, graphics.PreferredBackBufferHeight / 9 + offset),
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    graphics.PreferredBackBufferHeight / 1800f,
                     SpriteEffects.None,
                     0f);
 
             // Display score
             spriteBatch.Draw(scoreDisplayBaseTexture,
-                    new Vector2(375 * 0.4f, 200),
+                    new Vector2(graphics.PreferredBackBufferHeight / (720 / (375 * 0.4f)), graphics.PreferredBackBufferHeight / (720f / 250)),
                     null,
                     Color.White,
                     0f,
                     Vector2.Zero,
-                    0.40f,
+                    graphics.PreferredBackBufferHeight / 1800f,
                     SpriteEffects.None,
                     0f);
+
+            // Draw score text
+            DrawTextWithOutline(multicoloreFont,
+                score.ToString(),
+                new Vector2(graphics.PreferredBackBufferHeight / (720f / 630) - (graphics.PreferredBackBufferWidth / 3200f) * multicoloreFont.MeasureString(score.ToString()).X, graphics.PreferredBackBufferHeight / (720f / 275)),
+                new Color(192, 78, 127),
+                Color.White,
+                Vector2.Zero,
+                graphics.PreferredBackBufferWidth / 2800f,
+                3f);
+
+            // Draw high score text
+            DrawTextWithOutline(multicoloreFont,
+                score.ToString(), // TODO update this with actual high score
+                new Vector2(graphics.PreferredBackBufferHeight / (720f / 630) - (graphics.PreferredBackBufferWidth / 3800f) * multicoloreFont.MeasureString(score.ToString()).X, graphics.PreferredBackBufferHeight / (720f / 320)),
+                new Color(232, 132, 202),
+                Color.White,
+                Vector2.Zero,
+                graphics.PreferredBackBufferWidth / 3400f,
+                3f);
 
             // Display Perfects/Greats/Goods/Bads/Misses
             for (int i = 0; i < 5; i++) {
                 spriteBatch.Draw(noteCountBaseTexture,
-                    new Vector2(375 * 0.4f, 400 + i * 50),
+                    new Vector2(graphics.PreferredBackBufferHeight / (720 / (375 * 0.4f)), graphics.PreferredBackBufferHeight / (720f / (450 + i * 45))),
                     null,
                     Color.White,
                     0f,
                     Vector2.Zero,
-                    0.40f,
+                    graphics.PreferredBackBufferHeight / 1800f,
                     SpriteEffects.None,
                     0f);
-            }
-            
+                spriteBatch.Draw(accuracyLabelTextures[i],
+                    new Vector2(graphics.PreferredBackBufferHeight / (720 / (375 * 0.4f)) + graphics.PreferredBackBufferHeight / 72, graphics.PreferredBackBufferHeight / (720f / (450 + i * 45)) + graphics.PreferredBackBufferHeight / (720f/ 7)),
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    graphics.PreferredBackBufferHeight / 1800f,
+                    SpriteEffects.None,
+                    0f);
+
+                String noteCount = "ERROR";
+                switch (i) {
+                    case 0:
+                        noteCount = perfects.ToString();
+                        break;
+                    case 1:
+                        noteCount = greats.ToString();
+                        break;
+                    case 2:
+                        noteCount = goods.ToString();
+                        break;
+                    case 3:
+                        noteCount = bads.ToString();
+                        break;
+                    case 4:
+                        noteCount = misses.ToString();
+                        break;
+                }
+
+                DrawTextWithOutline(multicoloreFont,
+                    noteCount,
+                    new Vector2(graphics.PreferredBackBufferHeight / (720f / 425) - (graphics.PreferredBackBufferWidth / 3800f) * multicoloreFont.MeasureString(noteCount.ToString()).X, graphics.PreferredBackBufferHeight / (720f / (450 + i * 45)) + graphics.PreferredBackBufferHeight / (720f / 7)),
+                    new Color(135, 140, 146),
+                    Color.White,
+                    Vector2.Zero,
+                    graphics.PreferredBackBufferWidth / 3800f,
+                    3f);
+            }           
             spriteBatch.End();
-            /*spriteBatch.Begin();
-            spriteBatch.DrawString(defaultFont, 
-                                   "Perfect: " + perfects,
-                                   new Vector2(200, 100),
-                                   Color.Black
-                                   );
-            spriteBatch.DrawString(defaultFont,
-                                   "Great: " + greats,
-                                   new Vector2(200, 200),
-                                   Color.Black
-                                   );
-            spriteBatch.DrawString(defaultFont,
-                                   "Good: " + goods,
-                                   new Vector2(200, 300),
-                                   Color.Black
-                                   );
-            spriteBatch.DrawString(defaultFont,
-                                   "Bad: " + bads,
-                                   new Vector2(200, 400),
-                                   Color.Black
-                                   );
-            spriteBatch.DrawString(defaultFont,
-                                   "Miss: " + misses,
-                                   new Vector2(200, 500),
-                                   Color.Black
-                                   );
-            spriteBatch.DrawString(defaultFont,
-                                   "Max Combo: " + maxCombo,
-                                   new Vector2(200, 600),
-                                   Color.Black
-                                   );
-            spriteBatch.End();*/
         }
 
         /// <summary>
@@ -1466,6 +1551,17 @@ namespace SIFAC {
                 }
             }
             return NoteAccuracy.None;
+        }
+    
+        private void DrawTextWithOutline(SpriteFont font, String text, Vector2 position, Color textColour, Color outlineColour, Vector2 origin, float scale, float outlineThickness) {
+            // Draw outline
+            spriteBatch.DrawString(font, text, position + new Vector2(outlineThickness * scale, outlineThickness * scale), outlineColour, 0, origin, scale, SpriteEffects.None, 1f);
+            spriteBatch.DrawString(font, text, position + new Vector2(-outlineThickness * scale, outlineThickness * scale), outlineColour, 0, origin, scale, SpriteEffects.None, 1f);
+            spriteBatch.DrawString(font, text, position + new Vector2(-outlineThickness * scale, -outlineThickness * scale), outlineColour, 0, origin, scale, SpriteEffects.None, 1f);
+            spriteBatch.DrawString(font, text, position + new Vector2(outlineThickness * scale, -outlineThickness * scale), outlineColour, 0, origin, scale, SpriteEffects.None, 1f);
+
+            // Draw text
+            spriteBatch.DrawString(font, text, position, textColour, 0, origin, scale, SpriteEffects.None, 0f);
         }
     }
 

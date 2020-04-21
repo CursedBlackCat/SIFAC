@@ -15,7 +15,7 @@ namespace SIFAC {
         /*GLOBALLY USED VARIABLES*/
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        GameState currentGameState = GameState.SongSelectScreen;
+        GameState currentGameState = GameState.ResultScreen; // currently set to results screen for debugging purposes
         SpriteFont defaultFont;
         SpriteFont reglisseFillFont;
         KeyboardState previousState;
@@ -90,6 +90,9 @@ namespace SIFAC {
         ScoreRank rank = ScoreRank.D;
 
         /*RESULT SCREEN VARIABLES*/
+        Texture2D noteCountBaseTexture;
+        Texture2D scoreDisplayBaseTexture;
+        Texture2D songTitleBaseTexture;
 
         /*GOODBYE SCREEN VARIABLES*/
 
@@ -222,6 +225,10 @@ namespace SIFAC {
             starTextures[6] = starV;
             starTextures[7] = starE;
             starTextures[8] = starExclamation;
+
+            noteCountBaseTexture = Content.Load<Texture2D>("results_ui/Note_Count_Base");
+            scoreDisplayBaseTexture = Content.Load<Texture2D>("results_ui/Score_Display_Base");
+            songTitleBaseTexture = Content.Load<Texture2D>("results_ui/Song_Title_Base");
 
 
             // Initialize the VideoPlayer
@@ -1126,8 +1133,45 @@ namespace SIFAC {
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawResultScreen(GameTime gameTime) {
             // TODO make this actually look legit
-            GraphicsDevice.Clear(Color.White);
+            GraphicsDevice.Clear(new Color(19, 232, 174));
             spriteBatch.Begin();
+            // Display the song title
+            spriteBatch.Draw(songTitleBaseTexture,
+                    new Vector2(0, 50),
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    0.40f,
+                    SpriteEffects.None,
+                    0f);
+
+            // Display score
+            spriteBatch.Draw(scoreDisplayBaseTexture,
+                    new Vector2(375 * 0.4f, 200),
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    0.40f,
+                    SpriteEffects.None,
+                    0f);
+
+            // Display Perfects/Greats/Goods/Bads/Misses
+            for (int i = 0; i < 5; i++) {
+                spriteBatch.Draw(noteCountBaseTexture,
+                    new Vector2(375 * 0.4f, 400 + i * 50),
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    0.40f,
+                    SpriteEffects.None,
+                    0f);
+            }
+            
+            spriteBatch.End();
+            /*spriteBatch.Begin();
             spriteBatch.DrawString(defaultFont, 
                                    "Perfect: " + perfects,
                                    new Vector2(200, 100),
@@ -1158,7 +1202,7 @@ namespace SIFAC {
                                    new Vector2(200, 600),
                                    Color.Black
                                    );
-            spriteBatch.End();
+            spriteBatch.End();*/
         }
 
         /// <summary>
@@ -1668,6 +1712,9 @@ namespace SIFAC {
         Music
     }
 
+    /// <summary>
+    /// The possible score ranks that can be achieved by the end of a song.
+    /// </summary>
     public enum ScoreRank {
         SSS,
         SS,

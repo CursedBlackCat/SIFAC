@@ -1553,6 +1553,17 @@ namespace SIFAC {
             return NoteAccuracy.None;
         }
     
+        /// <summary>
+        /// Draws text with an border/stroke. Must be called after SpriteBatch.Begin() and before SpriteBatch.End().
+        /// </summary>
+        /// <param name="font">The SpriteFont to use.</param>
+        /// <param name="text">The text to be drawn.</param>
+        /// <param name="position">A Vector2 with the coordinates of where the text should be drawn.</param>
+        /// <param name="textColour">The colour of the text to be drawn.</param>
+        /// <param name="outlineColour">The colour of the text border.</param>
+        /// <param name="origin">The origin to use when drawing the text.</param>
+        /// <param name="scale">The scale at which the text should be drawn.</param>
+        /// <param name="outlineThickness">The thickness of the outline, in px.</param>
         private void DrawTextWithOutline(SpriteFont font, String text, Vector2 position, Color textColour, Color outlineColour, Vector2 origin, float scale, float outlineThickness) {
             // Draw outline
             spriteBatch.DrawString(font, text, position + new Vector2(outlineThickness * scale, outlineThickness * scale), outlineColour, 0, origin, scale, SpriteEffects.None, 1f);

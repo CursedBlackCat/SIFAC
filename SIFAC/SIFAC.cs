@@ -97,6 +97,8 @@ namespace SIFAC {
         Texture2D scoreDisplayBaseTexture;
         Texture2D songTitleBaseTexture;
         Texture2D[] accuracyLabelTextures = new Texture2D[5]; // // accuracyLabelTextures[0] is perfect, 1 is great, 2 is good, 3 is bad. 4 is miss
+        Texture2D maxComboTexture;
+        Texture2D fullComboTexture;
 
 
         /*GOODBYE SCREEN VARIABLES*/
@@ -119,7 +121,7 @@ namespace SIFAC {
         Boolean autoplay = false;
 
         // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be played fullscreen at 1080p.
-        Boolean fullscreen = true;
+        Boolean fullscreen = false;
 
         float noteHitVolume = 0.1f;
         /* END CONFIG */
@@ -240,7 +242,8 @@ namespace SIFAC {
             accuracyLabelTextures[2] = Content.Load<Texture2D>("results_ui/note_labels/Good");
             accuracyLabelTextures[3] = Content.Load<Texture2D>("results_ui/note_labels/Bad");
             accuracyLabelTextures[4] = Content.Load<Texture2D>("results_ui/note_labels/Miss");
-
+            maxComboTexture = Content.Load<Texture2D>("results_ui/Max_Combo");
+            fullComboTexture = Content.Load<Texture2D>("results_ui/Full_Combo");
 
             // Initialize the VideoPlayer
             bgVideoPlayer = new VideoPlayer();
@@ -1286,7 +1289,33 @@ namespace SIFAC {
                     Vector2.Zero,
                     graphics.PreferredBackBufferWidth / 3800f,
                     3f);
-            }           
+            }
+
+            // Display max combo text
+            spriteBatch.Draw(maxComboTexture,
+                new Vector2(graphics.PreferredBackBufferHeight / (720f / 480), graphics.PreferredBackBufferHeight / (720f / 480) + graphics.PreferredBackBufferHeight / (720f / 7)),
+                null,
+                Color.White,
+                0f,
+                Vector2.Zero,
+                graphics.PreferredBackBufferHeight / 1800f,
+                SpriteEffects.None,
+                0f);
+
+            // TODO display actual max combo
+
+            // Display Full Combo text if appropriate
+            if (combo == currentSong.beatmap.Length) { // TODO test if this works as intended
+                spriteBatch.Draw(fullComboTexture,
+                    new Vector2(graphics.PreferredBackBufferHeight / (720f / 480), graphics.PreferredBackBufferHeight / (720f / 620) + graphics.PreferredBackBufferHeight / (720f / 7)),
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                        graphics.PreferredBackBufferHeight / 1800f,
+                    SpriteEffects.None,
+                    0f);
+            }
             spriteBatch.End();
         }
 

@@ -98,6 +98,11 @@ namespace SIFAC {
         Texture2D songTitleBaseTexture;
         Texture2D[] accuracyLabelTextures = new Texture2D[5]; // // accuracyLabelTextures[0] is perfect, 1 is great, 2 is good, 3 is bad. 4 is miss
 
+        // 3D assets
+        Model kananModel;
+        Model[] kananModels = new Model[7];
+        Texture2D kananBodyTexture;
+        Texture2D kananHeadTexture;
 
         /*GOODBYE SCREEN VARIABLES*/
 
@@ -119,7 +124,7 @@ namespace SIFAC {
         Boolean autoplay = false;
 
         // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be played fullscreen at 1080p.
-        Boolean fullscreen = true;
+        Boolean fullscreen = false;
 
         float noteHitVolume = 0.1f;
         /* END CONFIG */
@@ -257,6 +262,18 @@ namespace SIFAC {
             multicoloreFont = Content.Load<SpriteFont>("fonts/Multicolore");
             delfinoFont = Content.Load<SpriteFont>("fonts/Delfino");
 
+            // Load 3D models and related textures
+            kananModel = Content.Load<Model>("3d/kanan/Body");
+            kananModels[0] = Content.Load<Model>("3d/kanan/Face");
+            kananModels[1] = Content.Load<Model>("3d/kanan/hair");
+            kananModels[2] = Content.Load<Model>("3d/kanan/Eye_Around");
+            kananModels[3] = Content.Load<Model>("3d/kanan/Eye");
+            kananModels[4] = Content.Load<Model>("3d/kanan/RightEyeWhiteLine");
+            kananModels[5] = Content.Load<Model>("3d/kanan/LeftEyeWhiteLine");
+            kananModels[6] = Content.Load<Model>("3d/kanan/Mouth");
+
+            kananBodyTexture = Content.Load<Texture2D>("3d/kanan/ch0103_co0004_body");
+            kananHeadTexture = Content.Load<Texture2D>("3d/kanan/ch0103_co0004_head");
 
             // TODO use a for loop of some sort to dynamically load all beatmaps
 
@@ -1285,9 +1302,67 @@ namespace SIFAC {
                     Color.White,
                     Vector2.Zero,
                     graphics.PreferredBackBufferWidth / 3800f,
-                    3f);
-            }           
+                    3f);           
+            }
             spriteBatch.End();
+
+            // Draw 3D model
+            Vector3 cameraPosition = new Vector3(0, 0, 2);
+            foreach (Model model in kananModels) {
+                foreach (ModelMesh mesh in model.Meshes) {
+                    foreach (BasicEffect effect in mesh.Effects) {
+                        // effect.EnableDefaultLighting();
+                        effect.LightingEnabled = true;
+                        effect.PreferPerPixelLighting = true;
+                        effect.Texture = kananHeadTexture;
+                        effect.TextureEnabled = true;
+
+                        effect.AmbientLightColor = new Vector3(.5f, .5f, .5f);
+
+                        effect.DirectionalLight0.Enabled = true;
+                        effect.DirectionalLight0.Direction = new Vector3(0.5f, -0.5f, -0.5f);
+                        effect.DirectionalLight0.DiffuseColor = Color.White.ToVector3();
+                        effect.DirectionalLight0.SpecularColor = Vector3.Zero;
+                        
+                        effect.World = Matrix.CreateWorld(
+                            new Vector3(0.85f, -1, 0),
+                            Vector3.Forward,
+                            Vector3.Up)
+                            ;
+                        effect.View = Matrix.CreateLookAt(
+                            cameraPosition,
+                            Vector3.Zero,
+                            Vector3.Up
+                            );
+                        effect.Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1.0f, 10f);
+                    }
+                    mesh.Draw();
+                }
+            }
+
+            foreach (ModelMesh mesh in kananModel.Meshes) {
+                foreach (BasicEffect effect in mesh.Effects) {
+                    effect.LightingEnabled = true;
+                    effect.EnableDefaultLighting();
+                    effect.PreferPerPixelLighting = true;
+                    effect.Texture = kananBodyTexture;
+                    effect.TextureEnabled = true;
+
+                    effect.World = Matrix.CreateWorld(
+                        new Vector3(0.85f, -1, 0),
+                        Vector3.Forward,
+                        Vector3.Up)
+                        ;
+                    effect.View = Matrix.CreateLookAt(
+                        cameraPosition,
+                        Vector3.Zero,
+                        Vector3.Up
+                        );
+                    effect.Projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, GraphicsDevice.Viewport.AspectRatio, 1.0f, 10f);
+                }
+                mesh.Draw();
+            }
+            
         }
 
         /// <summary>

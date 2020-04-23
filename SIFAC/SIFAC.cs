@@ -156,6 +156,9 @@ namespace SIFAC {
                 graphics.IsFullScreen = true;
             }
 
+            // Enable vsync if setting is on
+            graphics.SynchronizeWithVerticalRetrace = vsyncEnabled;
+
             graphics.ApplyChanges();
 
             radiusH = graphics.PreferredBackBufferWidth / 2.4615f;
@@ -176,9 +179,6 @@ namespace SIFAC {
             for (int i = 0; i < 4; i++) {
                 yOffsets[i] = hitMarkerPositions[8 - i].Y - noteSpawnPosition.Y; // xOffsets[0] corresponds to L4 and R4. xOffsets[3] corresponds to L1 and R1
             }
-
-            // Enable vsync if setting is on
-            graphics.SynchronizeWithVerticalRetrace = vsyncEnabled;
 
             base.Initialize();
             previousState = Keyboard.GetState();

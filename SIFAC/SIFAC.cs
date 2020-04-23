@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Audio;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Xna.Framework.Content;
 
 namespace SIFAC {
     /// <summary>
@@ -15,7 +16,7 @@ namespace SIFAC {
         /*GLOBALLY USED VARIABLES*/
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        GameState currentGameState = GameState.SongSelectScreen; // currently set to results screen for debugging purposes
+        GameState currentGameState = GameState.ResultScreen; // currently set to results screen for debugging purposes
         SpriteFont defaultFont;
         SpriteFont reglisseFillFont;
         SpriteFont multicoloreFont;
@@ -100,6 +101,8 @@ namespace SIFAC {
         Texture2D maxComboTexture;
         Texture2D fullComboResultTexture;
         Texture2D allPerfectResultTexture;
+        Texture2D starYellowTexture;
+        Texture2D starOrangeTexture;
 
 
         /*GOODBYE SCREEN VARIABLES*/
@@ -255,6 +258,8 @@ namespace SIFAC {
             maxComboTexture = Content.Load<Texture2D>("results_ui/Max_Combo");
             fullComboResultTexture = Content.Load<Texture2D>("results_ui/Full_Combo");
             allPerfectResultTexture = Content.Load<Texture2D>("results_ui/All_Perfect");
+            starYellowTexture = Content.Load<Texture2D>("results_ui/Star_Yellow");
+            starOrangeTexture = Content.Load<Texture2D>("results_ui/Star_Orange");
 
             // Initialize the VideoPlayer
             bgVideoPlayer = new VideoPlayer();
@@ -279,26 +284,26 @@ namespace SIFAC {
             Texture2D cover = Content.Load<Texture2D>("beatmap_assets/Believe Again/cover");
             Note[] beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Believe Again\beatmap.txt");
 
-            songs.Add(new PlayableSong("Believe Again", cover, video, beatmap, 11f/30f, 40000, 70000, 90000, 100000, 150000, 250000)); // TODO adjust target scores as appropriate
+            songs.Add(new PlayableSong("Believe Again", cover, video, beatmap, 14, 11f/30f, 40000, 70000, 90000, 100000, 150000, 250000)); // TODO adjust target scores as appropriate
 
             // Load Jump up HIGH!!
             video = Content.Load<Video>("beatmap_assets/Jump up HIGH!!/video");
             cover = Content.Load<Texture2D>("beatmap_assets/Jump up HIGH!!/cover");
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Jump up HIGH!!\beatmap.txt");
-            songs.Add(new PlayableSong("Jump up HIGH!!", cover, video, beatmap, -1f/12f, 40000, 70000, 90000, 100000, 150000, 250000)); // TODO adjust target scores as appropriate
+            songs.Add(new PlayableSong("Jump up HIGH!!", cover, video, beatmap, 12, -1f/12f, 40000, 70000, 90000, 100000, 150000, 250000)); // TODO adjust target scores as appropriate
 
             // Load the calibration beatmap
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Calibration\beatmap.txt");
-            songs.Add(new PlayableSong("Calibration", Content.Load<Texture2D>("beatmap_assets/Calibration/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), beatmap, 0, 0, 0, 0, 0, 0));
+            songs.Add(new PlayableSong("Calibration", Content.Load<Texture2D>("beatmap_assets/Calibration/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), beatmap, 1, 0, 0, 0, 0, 0, 0));
 
             // Load the hold calibration beatmap
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Hold Note Calibration\beatmap.txt");
-            songs.Add(new PlayableSong("Hold Note Calibration", Content.Load<Texture2D>("beatmap_assets/Hold Note Calibration/cover"), Content.Load<Song>("beatmap_assets/Hold Note Calibration/song"), beatmap, 0, 0, 0, 0, 0, 0));
+            songs.Add(new PlayableSong("Hold Note Calibration", Content.Load<Texture2D>("beatmap_assets/Hold Note Calibration/cover"), Content.Load<Song>("beatmap_assets/Hold Note Calibration/song"), beatmap, 1, 0, 0, 0, 0, 0, 0));
 
             // Add placeholder song
-            songs.Add(new PlayableSong("Placeholder", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0], 0, 0, 0, 0, 0, 0));
+            songs.Add(new PlayableSong("Placeholder", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0], 0, 0, 0, 0, 0, 0, 0));
 
-            currentSong = songs[1]; // TODO remove this after debugging result screen
+            currentSong = songs[0]; // TODO remove this after debugging result screen
         }
 
         /// <summary>
@@ -306,7 +311,7 @@ namespace SIFAC {
         /// game-specific content.
         /// </summary>
         protected override void UnloadContent() {
-            
+            Content.Unload();
         }
 
         /// <summary>
@@ -1230,6 +1235,40 @@ namespace SIFAC {
                     SpriteEffects.None,
                     0f);
 
+            // Display beatmap difficulty  
+            int orangeStars = 0;
+            int yellowStars = currentSong.difficulty;
+            float starScale = graphics.PreferredBackBufferHeight / 9600f;
+            if (currentSong.difficulty > 10) {
+                orangeStars = currentSong.difficulty % 10;
+                yellowStars = currentSong.difficulty - orangeStars;
+            }
+
+            for (int i = 0; i < yellowStars; i++) {
+                spriteBatch.Draw(starYellowTexture,
+                    new Vector2(graphics.PreferredBackBufferHeight / (720f / 270) + (starScale * starYellowTexture.Width * i), graphics.PreferredBackBufferHeight / (720f / 170)),
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    starScale,
+                    SpriteEffects.None,
+                    0f);
+            }
+
+            for (int i = 0; i < orangeStars; i++) {
+                spriteBatch.Draw(starOrangeTexture,
+                    new Vector2(graphics.PreferredBackBufferHeight / (720f / 270) + (starScale * starOrangeTexture.Width * i), graphics.PreferredBackBufferHeight / (720f / 170)),
+                    null,
+                    Color.White,
+                    0f,
+                    Vector2.Zero,
+                    starScale,
+                    SpriteEffects.None,
+                    0f);
+            }
+
+
             // Display score
             spriteBatch.Draw(scoreDisplayBaseTexture,
                     new Vector2(graphics.PreferredBackBufferHeight / (720 / (375 * 0.4f)), graphics.PreferredBackBufferHeight / (720f / 250)),
@@ -1746,6 +1785,7 @@ namespace SIFAC {
         public int sScore;
         public int ssScore;
         public int sssScore;
+        public int difficulty; // Challenge beatmap only. Will implement multi-difficulty later
 
         /// <summary>
         /// Constructs a PlayableSong with a background video, using the video as the beatmap's song source.
@@ -1754,18 +1794,20 @@ namespace SIFAC {
         /// <param name="cover">The cover art for the song.</param>
         /// <param name="v">The background video for the song. The song will use the audio track from the video file for the song.</param>
         /// <param name="map">The beatmap of the song.</param>
+        /// <param name="difficulty">The song's difficulty, in stars.</param>
         /// <param name="cScore">The minimum score required for a C score rank.</param>
         /// <param name="bScore">The minimum score required for a B score rank.</param>
         /// <param name="aScore">The minimum score required for an A score rank.</param>
         /// <param name="sScore">The minimum score required for an S score rank.</param>
         /// <param name="ssScore">The minimum score required for an SS score rank.</param>
         /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
-        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
+        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, int difficulty, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
             this.title = title;
             coverArt = cover;
             backgroundMv = v;
             beatmap = map;
             type = PlayableSongType.Video;
+            this.difficulty = difficulty;
             this.cScore = cScore;
             this.bScore = bScore;
             this.aScore = aScore;
@@ -1781,18 +1823,20 @@ namespace SIFAC {
         /// <param name="cover">The cover art for the song.</param>
         /// <param name="s">The audio for the song.</param>
         /// <param name="map">The beatmap of the song.</param>
+        /// <param name="difficulty">The song's difficulty, in stars.</param>
         /// <param name="cScore">The minimum score required for a C score rank.</param>
         /// <param name="bScore">The minimum score required for a B score rank.</param>
         /// <param name="aScore">The minimum score required for an A score rank.</param>
         /// <param name="sScore">The minimum score required for an S score rank.</param>
         /// <param name="ssScore">The minimum score required for an SS score rank.</param>
         /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
-        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
+        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, int difficulty, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
             this.title = title;
             coverArt = cover;
             music = s;
             beatmap = map;
             type = PlayableSongType.Music;
+            this.difficulty = difficulty;
             this.cScore = cScore;
             this.bScore = bScore;
             this.aScore = aScore;
@@ -1807,6 +1851,7 @@ namespace SIFAC {
         /// <param name="cover">The cover art for the song.</param>
         /// <param name="v">The background video for the song. The song will use the audio track from the video file for the song.</param>
         /// <param name="map">The beatmap of the song.</param>
+        /// <param name="difficulty">The song's difficulty, in stars.</param>
         /// <param name="offset">The time offset, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.</param>
         /// <param name="cScore">The minimum score required for a C score rank.</param>
         /// <param name="bScore">The minimum score required for a B score rank.</param>
@@ -1814,12 +1859,13 @@ namespace SIFAC {
         /// <param name="sScore">The minimum score required for an S score rank.</param>
         /// <param name="ssScore">The minimum score required for an SS score rank.</param>
         /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
-        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, float offset, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
+        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, int difficulty, float offset, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
             this.title = title;
             coverArt = cover;
             backgroundMv = v;
             beatmap = map;
             type = PlayableSongType.Video;
+            this.difficulty = difficulty;
             this.cScore = cScore;
             this.bScore = bScore;
             this.aScore = aScore;
@@ -1844,6 +1890,7 @@ namespace SIFAC {
         /// <param name="cover">The cover art for the song.</param>
         /// <param name="s">The audio for the song.</param>
         /// <param name="map">The beatmap of the song.</param>
+        /// <param name="difficulty">The song's difficulty, in stars.</param>
         /// <param name="offset">The time offset, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.</param>
         /// <param name="cScore">The minimum score required for a C score rank.</param>
         /// <param name="bScore">The minimum score required for a B score rank.</param>
@@ -1851,12 +1898,13 @@ namespace SIFAC {
         /// <param name="sScore">The minimum score required for an S score rank.</param>
         /// <param name="ssScore">The minimum score required for an SS score rank.</param>
         /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
-        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, float offset, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
+        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, int difficulty, float offset, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
             this.title = title;
             coverArt = cover;
             music = s;
             beatmap = map;
             type = PlayableSongType.Music;
+            this.difficulty = difficulty;
             this.cScore = cScore;
             this.bScore = bScore;
             this.aScore = aScore;

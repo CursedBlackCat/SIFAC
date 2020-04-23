@@ -15,7 +15,7 @@ namespace SIFAC {
         /*GLOBALLY USED VARIABLES*/
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        GameState currentGameState = GameState.ResultScreen; // currently set to results screen for debugging purposes
+        GameState currentGameState = GameState.SongSelectScreen; // currently set to results screen for debugging purposes
         SpriteFont defaultFont;
         SpriteFont reglisseFillFont;
         SpriteFont multicoloreFont;
@@ -98,7 +98,8 @@ namespace SIFAC {
         Texture2D songTitleBaseTexture;
         Texture2D[] accuracyLabelTextures = new Texture2D[5]; // // accuracyLabelTextures[0] is perfect, 1 is great, 2 is good, 3 is bad. 4 is miss
         Texture2D maxComboTexture;
-        Texture2D fullComboTexture;
+        Texture2D fullComboResultTexture;
+        Texture2D allPerfectResultTexture;
 
 
         /*GOODBYE SCREEN VARIABLES*/
@@ -118,10 +119,16 @@ namespace SIFAC {
         double timeOffset = 0;     
 
         // Autoplay, for debug purposes
-        Boolean autoplay = false;
+        Boolean autoplay = true;
 
         // Fullscreen 1080p vs 720p flag for debugging. Game is intended to be played fullscreen at 1080p.
         Boolean fullscreen = false;
+
+        // Whether to show framerate counter or not
+        Boolean showFPS = true;
+
+        // Vsync flag
+        Boolean vsyncEnabled = true;
 
         float noteHitVolume = 0.1f;
         /* END CONFIG */
@@ -169,6 +176,9 @@ namespace SIFAC {
             for (int i = 0; i < 4; i++) {
                 yOffsets[i] = hitMarkerPositions[8 - i].Y - noteSpawnPosition.Y; // xOffsets[0] corresponds to L4 and R4. xOffsets[3] corresponds to L1 and R1
             }
+
+            // Enable vsync if setting is on
+            graphics.SynchronizeWithVerticalRetrace = vsyncEnabled;
 
             base.Initialize();
             previousState = Keyboard.GetState();
@@ -243,7 +253,8 @@ namespace SIFAC {
             accuracyLabelTextures[3] = Content.Load<Texture2D>("results_ui/note_labels/Bad");
             accuracyLabelTextures[4] = Content.Load<Texture2D>("results_ui/note_labels/Miss");
             maxComboTexture = Content.Load<Texture2D>("results_ui/Max_Combo");
-            fullComboTexture = Content.Load<Texture2D>("results_ui/Full_Combo");
+            fullComboResultTexture = Content.Load<Texture2D>("results_ui/Full_Combo");
+            allPerfectResultTexture = Content.Load<Texture2D>("results_ui/All_Perfect");
 
             // Initialize the VideoPlayer
             bgVideoPlayer = new VideoPlayer();
@@ -634,12 +645,15 @@ namespace SIFAC {
             // Detect key down
             if (kstate.IsKeyDown(Keys.A) & !previousState.IsKeyDown(Keys.A)) {
                 // TODO
+                maxCombo += 100;
             }
             if (kstate.IsKeyDown(Keys.S) & !previousState.IsKeyDown(Keys.S)) {
                 // TODO
+                maxCombo += 10;
             }
             if (kstate.IsKeyDown(Keys.D) & !previousState.IsKeyDown(Keys.D)) {
                 // TODO
+                maxCombo += 1;
             }
             if (kstate.IsKeyDown(Keys.F) & !previousState.IsKeyDown(Keys.F)) {
                 // TODO
@@ -722,6 +736,12 @@ namespace SIFAC {
                 case GameState.GoodbyeScreen:
                     DrawGoodbyeScreen(gameTime);
                     break;
+            }
+
+            if (showFPS) {
+                spriteBatch.Begin();
+                drawFPSCounter(gameTime);
+                spriteBatch.End();
             }
         }
 
@@ -1291,28 +1311,51 @@ namespace SIFAC {
                     3f);
             }
 
-            // Display max combo text
+            // Display max combo label
             spriteBatch.Draw(maxComboTexture,
-                new Vector2(graphics.PreferredBackBufferHeight / (720f / 480), graphics.PreferredBackBufferHeight / (720f / 480) + graphics.PreferredBackBufferHeight / (720f / 7)),
+                new Vector2(graphics.PreferredBackBufferHeight / (720f / 580), graphics.PreferredBackBufferHeight / (720f / 480) + graphics.PreferredBackBufferHeight / (720f / 7)),
                 null,
                 Color.White,
                 0f,
-                Vector2.Zero,
+                new Vector2(maxComboTexture.Width / 2, maxComboTexture.Height / 2),
                 graphics.PreferredBackBufferHeight / 1800f,
                 SpriteEffects.None,
                 0f);
 
-            // TODO display actual max combo
+            // Display max combo
+            Vector2 maxComboTextSize = multicoloreFont.MeasureString(maxCombo.ToString());
+            float maxComboTextScale = graphics.PreferredBackBufferWidth / 1100f;
+            maxComboTextSize.X *= maxComboTextScale;
+            maxComboTextSize.Y *= maxComboTextScale;
 
-            // Display Full Combo text if appropriate
-            if (combo == currentSong.beatmap.Length) { // TODO test if this works as intended
-                spriteBatch.Draw(fullComboTexture,
-                    new Vector2(graphics.PreferredBackBufferHeight / (720f / 480), graphics.PreferredBackBufferHeight / (720f / 620) + graphics.PreferredBackBufferHeight / (720f / 7)),
+            DrawTextWithOutline(multicoloreFont,
+                maxCombo.ToString(),
+                new Vector2(graphics.PreferredBackBufferHeight / (720f / 600) + (maxComboTextSize.X / 2f), graphics.PreferredBackBufferHeight / (720f / 640)),
+                new Color(158, 42, 170),
+                Color.White,
+                maxComboTextSize,
+                maxComboTextScale,
+                3f);
+
+            // Display Full Combo/All Perfect text if appropriate
+            if (perfects == currentSong.beatmap.Length) { // TODO test if this works as intended
+                spriteBatch.Draw(allPerfectResultTexture,
+                    new Vector2(graphics.PreferredBackBufferHeight / (720f / 580), graphics.PreferredBackBufferHeight / (720f / 620) + graphics.PreferredBackBufferHeight / (720f / 7)),
                     null,
                     Color.White,
                     0f,
-                    Vector2.Zero,
-                        graphics.PreferredBackBufferHeight / 1800f,
+                    new Vector2(allPerfectResultTexture.Width / 2, allPerfectResultTexture.Height / 2),
+                    graphics.PreferredBackBufferHeight / 1800f,
+                    SpriteEffects.None,
+                    0f);
+            } else if (combo == currentSong.beatmap.Length) { // TODO test if this works as intended
+                spriteBatch.Draw(fullComboResultTexture,
+                    new Vector2(graphics.PreferredBackBufferHeight / (720f / 565), graphics.PreferredBackBufferHeight / (720f / 620) + graphics.PreferredBackBufferHeight / (720f / 7)),
+                    null,
+                    Color.White,
+                    0f,
+                    new Vector2(maxComboTexture.Width / 2, maxComboTexture.Height / 2),
+                    graphics.PreferredBackBufferHeight / 1800f,
                     SpriteEffects.None,
                     0f);
             }
@@ -1580,6 +1623,24 @@ namespace SIFAC {
                 }
             }
             return NoteAccuracy.None;
+        }
+
+        /// <summary>
+        /// Draws a framerate counter at the top right of the screen.
+        /// </summary>
+        /// <param name="gameTime">Provides a snapshot of timing values.</param>
+        private void drawFPSCounter(GameTime gameTime) {
+            int fps = (int)(1 / gameTime.ElapsedGameTime.TotalSeconds);
+            spriteBatch.DrawString(defaultFont,
+                fps.ToString() + " FPS",
+                new Vector2(graphics.PreferredBackBufferWidth - 50, 10),
+                // new Color(38, 252, 5),
+                Color.Red,
+                0,
+                Vector2.Zero,
+                0.3f,
+                SpriteEffects.None,
+                0f);
         }
     
         /// <summary>

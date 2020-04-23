@@ -753,3 +753,15 @@
 /processorParam:TextureFormat=Color
 /build:results_ui/Max_Combo.png
 
+#begin results_ui/All_Perfect.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:results_ui/All_Perfect.png
+

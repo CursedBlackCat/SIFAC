@@ -16,7 +16,7 @@ namespace SIFAC {
         /*GLOBALLY USED VARIABLES*/
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
-        GameState currentGameState = GameState.ResultScreen; // currently set to results screen for debugging purposes
+        GameState currentGameState = GameState.SongSelectScreen;
         SpriteFont defaultFont;
         SpriteFont reglisseFillFont;
         SpriteFont multicoloreFont;
@@ -113,9 +113,10 @@ namespace SIFAC {
         readonly double greatTolerance = 0.2;
         readonly double goodTolerance = 0.4;
         readonly double badTolerance = 0.8;
-        readonly double missTolerance = 1; // Not hitting a note after this much time elapses after its hit time will count as a miss
+        // Anything not hit after the bad tolerance time is a miss.
 
-        float noteSpeed = 1f; // Note speed, represented by seconds from spawn to note hit position.a
+        // Note speed, represented by seconds from spawn to note hit position.
+        float noteSpeed = 1f; 
 
         // Timing offset setting, in seconds.
         // If too large, notes will be too early. If too small, notes will be too late.
@@ -133,6 +134,7 @@ namespace SIFAC {
         // Vsync flag
         Boolean vsyncEnabled = true;
 
+        // Volume of note hit sound effect
         float noteHitVolume = 0.1f;
         /* END CONFIG */
 
@@ -536,8 +538,7 @@ namespace SIFAC {
                     }
 
                     // Handle missed notes
-                    if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset - missTolerance) {
-                        // Console.WriteLine("Miss");
+                    if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset - badTolerance) {
                         note.result = NoteAccuracy.Miss;
                         note.hasResolved = true;
                         if (note.isHold) {
@@ -1578,7 +1579,7 @@ namespace SIFAC {
 
             foreach (Note note in currentSong.beatmap) {
                 if (!note.hasResolved && ((down && !note.isRelease) || (!down && note.isRelease))) {
-                    if (note.lane == lane && note.position - currentAudioPosition <= badTolerance) {
+                    if (note.lane == lane && Math.Abs(note.position - currentAudioPosition) <= badTolerance) {
                         double diff = note.position - currentAudioPosition + timeOffset;
                         if (Math.Abs(diff) <= perfectTolerance) {
                             // Console.WriteLine("Perfect (early by " + diff + ")");

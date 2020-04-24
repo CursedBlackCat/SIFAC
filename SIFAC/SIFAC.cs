@@ -495,154 +495,80 @@ namespace SIFAC {
             }
             previousState = kstate;
 
-            // TODO refactor this code to have one foreach for both scenarios
-            if (currentSong.type == PlayableSongType.Video) { // Beatmap audio source is from video
-                foreach (Note note in currentSong.beatmap) {
-                    //AUTOPLAY CODE
-                    if (autoplay && !note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset) {
-                        // Console.WriteLine("Perfect (Auto)");
-                        note.result = NoteAccuracy.Perfect;
-                        hitSoundEffects[0].Play(noteHitVolume, 0f, 0f);
-                        note.hasResolved = true;
-                        perfects++;
-                        score += 300; // TODO adjust score as appropriate
-                        if (++combo > maxCombo) {
-                            maxCombo = combo;
-                        }
-                        if (note.hasStar) {
-                            stars++;
-                            // TODO play star note sound
-                        }
-                    }
-                    //END AUTOPLAY CODE
+            double currentAudioPosition = 0;
+            if (currentSong.type == PlayableSongType.Video) {
+                currentAudioPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
+            } else {
+                currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
+            }
 
-                    // Code to handle currently visible hold trails
-                    double currentAudioPosition;
-                    if (currentSong.type == PlayableSongType.Video) {
-                        currentAudioPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
-                    } else {
-                        currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
+            foreach (Note note in currentSong.beatmap) {
+                //AUTOPLAY CODE
+                if (autoplay && !note.hasResolved && note.position <= currentAudioPosition + timeOffset) {
+                    // Console.WriteLine("Perfect (Auto)");
+                    note.result = NoteAccuracy.Perfect;
+                    hitSoundEffects[0].Play(noteHitVolume, 0f, 0f);
+                    note.hasResolved = true;
+                    perfects++;
+                    score += 300; // TODO adjust score as appropriate
+                    if (++combo > maxCombo) {
+                        maxCombo = combo;
                     }
-
-                    if (note.isHold && !note.hasResolved && note.hasSpawned) {
-                        float[] coords = CalculateNoteCoordinates(currentAudioPosition, note);
-                        float removeTime = note.releaseNoteSpawnTime + ((float)currentAudioPosition - note.position);
-                        NoteTrail trail = new NoteTrail(new Vector2(coords[0], coords[1]), 0.35f - (float)((note.position - currentAudioPosition) * 0.30f), (float)currentAudioPosition, removeTime, GetReleaseNote(note));
-                        noteTrailPositions.Add(trail);
+                    if (note.hasStar) {
+                        stars++;
+                        // TODO play star note sound
                     }
+                }
+                //END AUTOPLAY CODE
 
-                    foreach (NoteTrail trail in noteTrailPositions.ToList()) {
-                        if (trail.removeTime < currentAudioPosition || trail.releaseNote.hasResolved) {
-                            noteTrailPositions.Remove(trail);
-                        }
-                    }
-
-                    // Handle missed notes
-                    if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset - badTolerance) {
-                        note.result = NoteAccuracy.Miss;
-                        note.hasResolved = true;
-                        if (note.isHold) {
-                            GetReleaseNote(note).hasResolved = true;
-                            GetReleaseNote(note).result = NoteAccuracy.Miss;
-                            misses++;
-                        }
-                        combo = 0;
-                        misses++;
-                    }                   
+                // Code to handle currently visible hold trails
+                if (note.isHold && !note.hasResolved && note.hasSpawned) {
+                    float[] coords = CalculateNoteCoordinates(currentAudioPosition, note);
+                    float removeTime = note.releaseNoteSpawnTime + ((float)currentAudioPosition - note.position);
+                    NoteTrail trail = new NoteTrail(new Vector2(coords[0], coords[1]), 0.35f - (float)((note.position - currentAudioPosition) * 0.30f), (float)currentAudioPosition, removeTime, GetReleaseNote(note));
+                    noteTrailPositions.Add(trail);
                 }
 
-                // Update score rank
-                if (score >= currentSong.sssScore) {
-                    rank = ScoreRank.SSS;
-                } else if (score >= currentSong.ssScore) {
-                    rank = ScoreRank.SS;
-                } else if (score >= currentSong.sScore) {
-                    rank = ScoreRank.S;
-                } else if (score >= currentSong.aScore) {
-                    rank = ScoreRank.A;
-                } else if (score >= currentSong.bScore) {
-                    rank = ScoreRank.B;
-                } else if (score >= currentSong.cScore) {
-                    rank = ScoreRank.C;
-                } else {
-                    rank = ScoreRank.D;
+                foreach (NoteTrail trail in noteTrailPositions.ToList()) {
+                    if (trail.removeTime < currentAudioPosition || trail.releaseNote.hasResolved) {
+                        noteTrailPositions.Remove(trail);
+                    }
                 }
 
-                // Detect if song is over
-                if (bgVideoPlayer.State == MediaState.Stopped) {
-                    currentGameState = GameState.ResultScreen;
-                }
-            } else { // Beatmap audio source is from audio file
-                foreach (Note note in currentSong.beatmap) {
-                    //AUTOPLAY CODE
-                    if (autoplay && !note.hasResolved && note.position <= MediaPlayer.PlayPosition.TotalSeconds + timeOffset) {
-                        // Console.WriteLine("Auto");
-                        note.result = NoteAccuracy.Perfect;
-                        hitSoundEffects[0].Play(0.2f, 0f, 0f);
-                        note.hasResolved = true;
-                        perfects++;
-                    }
-                    //END AUTOPLAY CODE
-
-                    // Code to handle currently visible hold trails
-                    double currentAudioPosition;
-                    if (currentSong.type == PlayableSongType.Video) {
-                        currentAudioPosition = bgVideoPlayer.PlayPosition.TotalSeconds;
-                    } else {
-                        currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
-                    }
-
-                    if (note.isHold && !note.hasResolved && note.hasSpawned) {
-                        float[] coords = CalculateNoteCoordinates(currentAudioPosition, note);
-                        float removeTime = note.releaseNoteSpawnTime + ((float) currentAudioPosition - note.position);
-                        if (removeTime < note.releaseNoteSpawnTime) {
-                            NoteTrail trail = new NoteTrail(new Vector2(coords[0], coords[1]), 0.35f - (float)((note.position - currentAudioPosition) * 0.30f), (float) currentAudioPosition, removeTime, GetReleaseNote(note));
-                            noteTrailPositions.Add(trail);
-                        }   
-                    }
-
-                    foreach (NoteTrail trail in noteTrailPositions.ToList()) {
-                        if (trail.removeTime < currentAudioPosition || trail.releaseNote.hasResolved) {
-                            noteTrailPositions.Remove(trail);
-                        }
-                    }
-
-                    // Handle misses
-                    if (!note.hasResolved && note.position <= bgVideoPlayer.PlayPosition.TotalSeconds + timeOffset - missTolerance) {
-                        Console.WriteLine("Miss");
-                        note.result = NoteAccuracy.Miss;
-                        note.hasResolved = true;
-                        if (note.isHold) {
-                            GetReleaseNote(note).hasResolved = true;
-                            GetReleaseNote(note).result = NoteAccuracy.Miss;
-                            misses++;
-                        }
-                        combo = 0;
+                // Handle missed notes
+                if (!note.hasResolved && note.position <= currentAudioPosition + timeOffset - badTolerance) {
+                    note.result = NoteAccuracy.Miss;
+                    note.hasResolved = true;
+                    if (note.isHold) {
+                        GetReleaseNote(note).hasResolved = true;
+                        GetReleaseNote(note).result = NoteAccuracy.Miss;
                         misses++;
                     }
+                    combo = 0;
+                    misses++;
                 }
+            }
 
-                // Update score rank
-                if(score >= currentSong.sssScore) {
-                    rank = ScoreRank.SSS;
-                } else if (score >= currentSong.ssScore) {
-                    rank = ScoreRank.SS;
-                } else if (score >= currentSong.sScore) {
-                    rank = ScoreRank.S;
-                } else if (score >= currentSong.aScore) {
-                    rank = ScoreRank.A;
-                } else if (score >= currentSong.bScore) {
-                    rank = ScoreRank.B;
-                } else if (score >= currentSong.cScore) {
-                    rank = ScoreRank.C;
-                } else {
-                    rank = ScoreRank.D;
-                }
+            // Update score rank
+            if (score >= currentSong.sssScore) {
+                rank = ScoreRank.SSS;
+            } else if (score >= currentSong.ssScore) {
+                rank = ScoreRank.SS;
+            } else if (score >= currentSong.sScore) {
+                rank = ScoreRank.S;
+            } else if (score >= currentSong.aScore) {
+                rank = ScoreRank.A;
+            } else if (score >= currentSong.bScore) {
+                rank = ScoreRank.B;
+            } else if (score >= currentSong.cScore) {
+                rank = ScoreRank.C;
+            } else {
+                rank = ScoreRank.D;
+            }
 
-                // Detect if song is over
-                if (MediaPlayer.State == MediaState.Stopped) {
-                    currentGameState = GameState.ResultScreen;
-                }
+            // Detect if song is over
+            if ((currentSong.type == PlayableSongType.Video && bgVideoPlayer.State == MediaState.Stopped) || (currentSong.type == PlayableSongType.Music && MediaPlayer.State == MediaState.Stopped)) {
+                currentGameState = GameState.ResultScreen;
             }
         }
 
@@ -651,15 +577,12 @@ namespace SIFAC {
             // Detect key down
             if (kstate.IsKeyDown(Keys.A) & !previousState.IsKeyDown(Keys.A)) {
                 // TODO
-                maxCombo += 100;
             }
             if (kstate.IsKeyDown(Keys.S) & !previousState.IsKeyDown(Keys.S)) {
                 // TODO
-                maxCombo += 10;
             }
             if (kstate.IsKeyDown(Keys.D) & !previousState.IsKeyDown(Keys.D)) {
                 // TODO
-                maxCombo += 1;
             }
             if (kstate.IsKeyDown(Keys.F) & !previousState.IsKeyDown(Keys.F)) {
                 // TODO

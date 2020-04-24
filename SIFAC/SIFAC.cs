@@ -305,7 +305,7 @@ namespace SIFAC {
             // Add placeholder song
             songs.Add(new PlayableSong("Placeholder", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0], 0, 0, 0, 0, 0, 0, 0));
 
-            currentSong = songs[0]; // TODO remove this after debugging result screen
+            currentSong = songs[1]; // TODO remove this after debugging result screen
         }
 
         /// <summary>
@@ -353,15 +353,15 @@ namespace SIFAC {
         }
 
         void UpdateTitleScreen(GameTime gameTime) {
-            // TODO
+            
         }
 
         void UpdateNesicaCheckScreen(GameTime gameTime) {
-            // TODO
+            
         }
 
         void UpdateGroupSelectScreen(GameTime gameTime) {
-            // TODO
+            
         }
 
         void UpdateSongSelectScreen(GameTime gameTime) {
@@ -417,7 +417,7 @@ namespace SIFAC {
         }
 
         void UpdateLivePreparationScreen(GameTime gameTime) {
-            // TODO
+            
         }
 
         void UpdateLiveScreen(GameTime gameTime) {
@@ -451,11 +451,10 @@ namespace SIFAC {
                 JudgeHit(8, true);
             }
             if (kstate.IsKeyDown(Keys.Escape) & !previousState.IsKeyDown(Keys.Escape)) {
-                // Console.WriteLine("Red Button Pressed");
                 Exit();
             }
             if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
-                // Console.WriteLine("Blue Button Pressed");
+                
             }
 
             // Detect key up
@@ -487,11 +486,10 @@ namespace SIFAC {
                 JudgeHit(8, false);
             }
             if (!kstate.IsKeyDown(Keys.Escape) & previousState.IsKeyDown(Keys.Escape)) {
-                // Console.WriteLine("Red Button Released");
                 Exit();
             }
             if (!kstate.IsKeyDown(Keys.Enter) & previousState.IsKeyDown(Keys.Enter)) {
-                // Console.WriteLine("Blue Button Released");
+
             }
             previousState = kstate;
 
@@ -576,31 +574,31 @@ namespace SIFAC {
             var kstate = Keyboard.GetState();
             // Detect key down
             if (kstate.IsKeyDown(Keys.A) & !previousState.IsKeyDown(Keys.A)) {
-                // TODO
+                // Button isn't active here
             }
             if (kstate.IsKeyDown(Keys.S) & !previousState.IsKeyDown(Keys.S)) {
-                // TODO
+                // Button isn't active here
             }
             if (kstate.IsKeyDown(Keys.D) & !previousState.IsKeyDown(Keys.D)) {
-                // TODO
+                // Button isn't active here
             }
             if (kstate.IsKeyDown(Keys.F) & !previousState.IsKeyDown(Keys.F)) {
-                // TODO
+                // Button isn't active here
             }
             if (kstate.IsKeyDown(Keys.Space) & !previousState.IsKeyDown(Keys.Space)) {
-                // TODO
+                // Button isn't active here
             }
             if (kstate.IsKeyDown(Keys.J) & !previousState.IsKeyDown(Keys.J)) {
-                // TODO
+                // Button isn't active here
             }
             if (kstate.IsKeyDown(Keys.K) & !previousState.IsKeyDown(Keys.K)) {
-                // TODO
+                /// Button isn't active here
             }
             if (kstate.IsKeyDown(Keys.L) & !previousState.IsKeyDown(Keys.L)) {
-                // TODO
+                // Button isn't active here
             }
             if (kstate.IsKeyDown(Keys.OemSemicolon) & !previousState.IsKeyDown(Keys.OemSemicolon)) {
-                // TODO
+                // Button isn't active here
             }
             if (kstate.IsKeyDown(Keys.Escape) & !previousState.IsKeyDown(Keys.Escape)) {
                 Console.WriteLine("Red Button Pressed");
@@ -625,6 +623,7 @@ namespace SIFAC {
                     note.hasResolved = false;
                 }
 
+                // Go back to song select screen
                 currentGameState = GameState.SongSelectScreen;
             }
             previousState = kstate;
@@ -679,7 +678,6 @@ namespace SIFAC {
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawTitleScreen(GameTime gameTime) {
-            // TODO
             GraphicsDevice.Clear(Color.White);
         }
 
@@ -688,7 +686,6 @@ namespace SIFAC {
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawNesicaCheckScreen(GameTime gameTime) {
-            // TODO
             GraphicsDevice.Clear(Color.White);
         }
 
@@ -697,7 +694,6 @@ namespace SIFAC {
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawGroupSelectScreen(GameTime gameTime) {
-            // TODO
             GraphicsDevice.Clear(Color.White);
         }
 
@@ -808,7 +804,6 @@ namespace SIFAC {
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawLivePreparationScreen(GameTime gameTime) {
-            // TODO
             GraphicsDevice.Clear(Color.White);
         }
 
@@ -881,68 +876,10 @@ namespace SIFAC {
                 0f);
 
             // Draw the notes
-            for (int i = 0; i < currentSong.beatmap.Length; i++) {
-                Note note = currentSong.beatmap[i];
-                Note nextNote;
-                if (i + 1 >= currentSong.beatmap.Length) {
-                    nextNote = new Note(0f, 0, false, false, false, 0f, 0f, false);
-                } else {
-                    nextNote = currentSong.beatmap[i + 1];
-                }
-                if (note.hasResolved && !note.isHold) {
-                    continue;
-                }
+            foreach (Note note in currentSong.beatmap) {
                 if (note.position <= currentAudioPosition + noteSpeed && !note.hasResolved) {
                     float[] coordinates = CalculateNoteCoordinates(currentAudioPosition, note);
                     float noteSize = 0.35f - (float)((note.position - currentAudioPosition) * 0.30f);
-
-                    // TODO release note multis aren't rendering properly
-                    // TODO this if statement hell is disgusting, refactor this
-                    if (note.texture == null) {
-                        if (note.hasStar && !note.isMultiple) {
-                            note.texture = noteStarTexture;
-                        } else if (note.hasStar && note.isMultiple) {
-                            if (lastMultiWasBlue) {
-                                note.texture = noteStarMultiOrangeTexture;
-                                if (nextNote.position != note.position) {
-                                    lastMultiWasBlue = false;
-                                }
-                            } else {
-                                note.texture = noteStarMultiBlueTexture;
-                                if (nextNote.position != note.position) {
-                                    lastMultiWasBlue = true;
-                                }
-                            }
-                        } else if (note.isRelease && note.isMultiple) {
-                            if (lastMultiWasBlue) {
-                                note.texture = noteReleaseMultiOrangeTexture;
-                                if (nextNote.position != note.position) {
-                                    lastMultiWasBlue = false;
-                                }
-                            } else {
-                                note.texture = noteReleaseMultiBlueTexture;
-                                if (nextNote.position != note.position) {
-                                    lastMultiWasBlue = true;
-                                }
-                            }
-                        } else if (note.isMultiple) {
-                            if (lastMultiWasBlue) {
-                                note.texture = noteMultiOrangeTexture;
-                                if (nextNote.position != note.position) {
-                                    lastMultiWasBlue = false;
-                                }
-                            } else {
-                                note.texture = noteMultiBlueTexture;
-                                if (nextNote.position != note.position) {
-                                    lastMultiWasBlue = true;
-                                }
-                            }
-                        } else if (note.isRelease) {
-                            note.texture = noteReleaseTexture;
-                        } else {
-                            note.texture = noteTexture;
-                        }
-                    }
 
                     spriteBatch.Draw(note.texture,
                         new Vector2(coordinates[0], coordinates[1]),
@@ -1301,7 +1238,7 @@ namespace SIFAC {
                 3f);
 
             // Display Full Combo/All Perfect text if appropriate
-            if (perfects == currentSong.beatmap.Length) { // TODO test if this works as intended
+            if (perfects == currentSong.beatmap.Length) {
                 spriteBatch.Draw(allPerfectResultTexture,
                     new Vector2(graphics.PreferredBackBufferHeight / (720f / 580), graphics.PreferredBackBufferHeight / (720f / 620) + graphics.PreferredBackBufferHeight / (720f / 7)),
                     null,
@@ -1311,7 +1248,7 @@ namespace SIFAC {
                     graphics.PreferredBackBufferHeight / 1800f,
                     SpriteEffects.None,
                     0f);
-            } else if (combo == currentSong.beatmap.Length) { // TODO test if this works as intended
+            } else if (combo == currentSong.beatmap.Length) {
                 spriteBatch.Draw(fullComboResultTexture,
                     new Vector2(graphics.PreferredBackBufferHeight / (720f / 565), graphics.PreferredBackBufferHeight / (720f / 620) + graphics.PreferredBackBufferHeight / (720f / 7)),
                     null,
@@ -1330,7 +1267,6 @@ namespace SIFAC {
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawGoodbyeScreen(GameTime gameTime) {
-            // TODO
             GraphicsDevice.Clear(Color.White);
         }
 
@@ -1376,9 +1312,72 @@ namespace SIFAC {
                     default:
                         throw new BeatmapParseException("Invalid note lane " + data[1]);
                 }
-                beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]));
+                beatmap[i] = new Note(float.Parse(data[0]), lane, bool.Parse(data[2]), bool.Parse(data[3]), bool.Parse(data[4]), float.Parse(data[5]), float.Parse(data[6]), bool.Parse(data[7]), null);
             }
             Array.Sort(beatmap, delegate (Note x, Note y) { return x.position.CompareTo(y.position); });
+
+            for (int i = 0; i < beatmap.Length; i++) {
+                Note note = beatmap[i];
+                Note nextNote;
+                if (i + 1 >= beatmap.Length) {
+                    nextNote = new Note(0f, 0, false, false, false, 0f, 0f, false, null); // Dummy note
+                } else {
+                    nextNote = beatmap[i + 1];
+                }
+                if (note.hasResolved && !note.isHold) {
+                    continue;
+                }
+
+                // TODO release note multis aren't rendering properly
+                // TODO this if statement hell is disgusting, refactor this
+                if (note.texture == null) {
+                    if (note.hasStar && !note.isMultiple) {
+                        note.texture = noteStarTexture;
+                    } else if (note.hasStar && note.isMultiple) {
+                        if (lastMultiWasBlue) {
+                            note.texture = noteStarMultiOrangeTexture;
+                            if (nextNote.position != note.position) {
+                                lastMultiWasBlue = false;
+                            }
+                        } else {
+                            note.texture = noteStarMultiBlueTexture;
+                            if (nextNote.position != note.position) {
+                                lastMultiWasBlue = true;
+                            }
+                        }
+                    } else if (note.isRelease && note.isMultiple) {
+                        if (lastMultiWasBlue) {
+                            note.texture = noteReleaseMultiOrangeTexture;
+                            if (nextNote.position != note.position) {
+                                lastMultiWasBlue = false;
+                            }
+                        } else {
+                            note.texture = noteReleaseMultiBlueTexture;
+                            if (nextNote.position != note.position) {
+                                lastMultiWasBlue = true;
+                            }
+                        }
+                    } else if (note.isMultiple) {
+                        if (lastMultiWasBlue) {
+                            note.texture = noteMultiOrangeTexture;
+                            if (nextNote.position != note.position) {
+                                lastMultiWasBlue = false;
+                            }
+                        } else {
+                            note.texture = noteMultiBlueTexture;
+                            if (nextNote.position != note.position) {
+                                lastMultiWasBlue = true;
+                            }
+                        }
+                    } else if (note.isRelease) {
+                        note.texture = noteReleaseTexture;
+                    } else {
+                        note.texture = noteTexture;
+                    }
+                }
+            }
+
+
             return beatmap;
         }
 
@@ -1645,7 +1644,7 @@ namespace SIFAC {
         public NoteAccuracy result;
         public Boolean hasResolved;
         public Texture2D texture;
-        public Note(float pos, int lan, Boolean multiple, Boolean hold, Boolean release, float releaseNoteTime, float parentNoteTime, Boolean star) {
+        public Note(float pos, int lan, Boolean multiple, Boolean hold, Boolean release, float releaseNoteTime, float parentNoteTime, Boolean star, Texture2D texture) {
             position = pos;
             lane = lan;
             isMultiple = multiple;
@@ -1657,6 +1656,7 @@ namespace SIFAC {
             hasSpawned = false;
             hasResolved = false;
             result = NoteAccuracy.None;
+            this.texture = texture;
         }
     }
 

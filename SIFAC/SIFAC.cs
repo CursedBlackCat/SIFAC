@@ -24,6 +24,7 @@ namespace SIFAC {
         KeyboardState previousState;
         List<PlayableSong> songs = new List<PlayableSong>();
         PlayableSong currentSong;
+        Difficulty currentDifficulty;
 
         /*TITLE SCREEN VARIABLES*/
 
@@ -286,24 +287,41 @@ namespace SIFAC {
             Texture2D cover = Content.Load<Texture2D>("beatmap_assets/Believe Again/cover");
             Note[] beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Believe Again\beatmap.txt");
 
-            songs.Add(new PlayableSong("Believe Again", cover, video, beatmap, 14, 11f/30f, 40000, 70000, 90000, 100000, 150000, 250000)); // TODO adjust target scores as appropriate
+            PlayableSong song = new PlayableSong("Believe Again", cover, video);
+            song.addDifficulty(Difficulty.Challenge, beatmap, 14, new int [] { 40000, 70000, 90000, 100000, 150000, 250000 }, 11f/30f); // TODO adjust target scores as appropriate
+
+            songs.Add(song); 
 
             // Load Jump up HIGH!!
             video = Content.Load<Video>("beatmap_assets/Jump up HIGH!!/video");
             cover = Content.Load<Texture2D>("beatmap_assets/Jump up HIGH!!/cover");
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Jump up HIGH!!\beatmap.txt");
-            songs.Add(new PlayableSong("Jump up HIGH!!", cover, video, beatmap, 12, -1f/12f, 40000, 70000, 90000, 100000, 150000, 250000)); // TODO adjust target scores as appropriate
+
+            song = new PlayableSong("Jump up HIGH!!", cover, video);
+            song.addDifficulty(Difficulty.Challenge, beatmap, 12, new int[] { 40000, 70000, 90000, 100000, 150000, 250000 }, -1f/12f); // TODO adjust target scores as appropriate
+
+            songs.Add(song); // TODO adjust target scores as appropriate
 
             // Load the calibration beatmap
+            Song audio = Content.Load<Song>("beatmap_assets/Calibration/song");
+            cover = Content.Load<Texture2D>("beatmap_assets/Calibration/cover");
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Calibration\beatmap.txt");
-            songs.Add(new PlayableSong("Calibration", Content.Load<Texture2D>("beatmap_assets/Calibration/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), beatmap, 1, 0, 0, 0, 0, 0, 0));
+
+            song = new PlayableSong("Calibration", cover, audio);
+            song.addDifficulty(Difficulty.Easy, beatmap, 1, new int[] { 1000, 2000, 3000, 4000, 5000, 6000 });
+            songs.Add(song);
 
             // Load the hold calibration beatmap
             beatmap = LoadBeatmap(@"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\Hold Note Calibration\beatmap.txt");
-            songs.Add(new PlayableSong("Hold Note Calibration", Content.Load<Texture2D>("beatmap_assets/Hold Note Calibration/cover"), Content.Load<Song>("beatmap_assets/Hold Note Calibration/song"), beatmap, 1, 0, 0, 0, 0, 0, 0));
+
+            song = new PlayableSong("Hold Note Calibration", cover, audio);
+            song.addDifficulty(Difficulty.Easy, beatmap, 1, new int[] { 1000, 2000, 3000, 4000, 5000, 6000 });
+            songs.Add(song);
 
             // Add placeholder song
-            songs.Add(new PlayableSong("Placeholder", Content.Load<Texture2D>("beatmap_assets/Placeholder/cover"), Content.Load<Song>("beatmap_assets/Calibration/song"), new Note[0], 0, 0, 0, 0, 0, 0, 0));
+            song = new PlayableSong("Placeholder", cover, audio);
+            song.addDifficulty(Difficulty.Easy, new Note[0], 1, new int[] { 1000, 2000, 3000, 4000, 5000, 6000 });
+            songs.Add(song);
 
             currentSong = songs[1]; // TODO remove this after debugging result screen
         }
@@ -405,6 +423,7 @@ namespace SIFAC {
             }
             if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
                 currentSong = menuChoices[highlightedMenuElement];
+                currentDifficulty = Difficulty.Easy; // TODO Add an option to select this in the menu
                 if (currentSong.type == PlayableSongType.Music && MediaPlayer.State == MediaState.Stopped) {
                     MediaPlayer.Play(currentSong.music);
                 } else if (bgVideoPlayer.State == MediaState.Stopped) {
@@ -500,7 +519,9 @@ namespace SIFAC {
                 currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
             }
 
-            foreach (Note note in currentSong.beatmap) {
+            PlayableSongDifficulty currentPlayableDifficulty = currentSong.getDifficulty(currentDifficulty);
+
+            foreach (Note note in currentPlayableDifficulty.beatmap) {
                 //AUTOPLAY CODE
                 if (autoplay && !note.hasResolved && note.position <= currentAudioPosition + timeOffset) {
                     // Console.WriteLine("Perfect (Auto)");
@@ -548,17 +569,17 @@ namespace SIFAC {
             }
 
             // Update score rank
-            if (score >= currentSong.sssScore) {
+            if (score >= currentPlayableDifficulty.targetScores[5]) {
                 rank = ScoreRank.SSS;
-            } else if (score >= currentSong.ssScore) {
+            } else if (score >= currentPlayableDifficulty.targetScores[4]) {
                 rank = ScoreRank.SS;
-            } else if (score >= currentSong.sScore) {
+            } else if (score >= currentPlayableDifficulty.targetScores[3]) {
                 rank = ScoreRank.S;
-            } else if (score >= currentSong.aScore) {
+            } else if (score >= currentPlayableDifficulty.targetScores[2]) {
                 rank = ScoreRank.A;
-            } else if (score >= currentSong.bScore) {
+            } else if (score >= currentPlayableDifficulty.targetScores[1]) {
                 rank = ScoreRank.B;
-            } else if (score >= currentSong.cScore) {
+            } else if (score >= currentPlayableDifficulty.targetScores[0]) {
                 rank = ScoreRank.C;
             } else {
                 rank = ScoreRank.D;
@@ -618,7 +639,7 @@ namespace SIFAC {
                 rank = ScoreRank.D;
 
                 // Reset the beatmap
-                foreach (Note note in currentSong.beatmap) {
+                foreach (Note note in currentSong.getDifficulty(currentDifficulty).beatmap) {
                     note.hasSpawned = false;
                     note.hasResolved = false;
                 }
@@ -814,6 +835,8 @@ namespace SIFAC {
         void DrawLiveScreen(GameTime gameTime) {
             GraphicsDevice.Clear(Color.Black);
 
+            PlayableSongDifficulty currentPlayableDifficulty = currentSong.getDifficulty(currentDifficulty);
+
             spriteBatch.Begin();
 
             // Draw the video frame
@@ -876,7 +899,7 @@ namespace SIFAC {
                 0f);
 
             // Draw the notes
-            foreach (Note note in currentSong.beatmap) {
+            foreach (Note note in currentPlayableDifficulty.beatmap) {
                 if (note.position <= currentAudioPosition + noteSpeed && !note.hasResolved) {
                     float[] coordinates = CalculateNoteCoordinates(currentAudioPosition, note);
                     float noteSize = 0.35f - (float)((note.position - currentAudioPosition) * 0.30f);
@@ -969,15 +992,15 @@ namespace SIFAC {
             float scorePercent; // % of the way from current rank to next one
 
             if (rank == ScoreRank.D) {
-                scorePercent = (float)score / currentSong.cScore;
+                scorePercent = (float)score / currentPlayableDifficulty.targetScores[0];
             } else if (rank == ScoreRank.C) { 
-                scorePercent = (float)(score - currentSong.cScore) / (currentSong.bScore - currentSong.cScore);
+                scorePercent = (float)(score - currentPlayableDifficulty.targetScores[0]) / (currentPlayableDifficulty.targetScores[1] - currentPlayableDifficulty.targetScores[0]);
             } else if (rank == ScoreRank.B) {
-                scorePercent = (float)(score - currentSong.bScore) / (currentSong.aScore - currentSong.bScore);
+                scorePercent = (float)(score - currentPlayableDifficulty.targetScores[1]) / (currentPlayableDifficulty.targetScores[2] - currentPlayableDifficulty.targetScores[1]);
             } else if (rank == ScoreRank.A) {
-                scorePercent = (float)(score - currentSong.aScore) / (currentSong.sScore - currentSong.aScore);
+                scorePercent = (float)(score - currentPlayableDifficulty.targetScores[2]) / (currentPlayableDifficulty.targetScores[3] - currentPlayableDifficulty.targetScores[2]);
             } else {
-                scorePercent = (float)(score - currentSong.sScore) / (currentSong.ssScore - currentSong.sScore);
+                scorePercent = (float)(score - currentPlayableDifficulty.targetScores[3]) / (currentPlayableDifficulty.targetScores[4] - currentPlayableDifficulty.targetScores[3]);
             }
 
             if (scorePercent > 1) {
@@ -1037,6 +1060,9 @@ namespace SIFAC {
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         void DrawResultScreen(GameTime gameTime) {
             GraphicsDevice.Clear(new Color(19, 232, 174));
+
+            PlayableSongDifficulty currentPlayableDifficulty = currentSong.getDifficulty(currentDifficulty);
+
             spriteBatch.Begin();
 
             // Draw the result title text
@@ -1098,11 +1124,11 @@ namespace SIFAC {
 
             // Display beatmap difficulty  
             int orangeStars = 0;
-            int yellowStars = currentSong.difficulty;
+            int yellowStars = currentPlayableDifficulty.starDifficulty;
             float starScale = graphics.PreferredBackBufferHeight / 9600f;
-            if (currentSong.difficulty > 10) {
-                orangeStars = currentSong.difficulty % 10;
-                yellowStars = currentSong.difficulty - orangeStars;
+            if (currentPlayableDifficulty.starDifficulty > 10) {
+                orangeStars = currentPlayableDifficulty.starDifficulty % 10;
+                yellowStars = currentPlayableDifficulty.starDifficulty - orangeStars;
             }
 
             for (int i = 0; i < yellowStars; i++) {
@@ -1238,7 +1264,7 @@ namespace SIFAC {
                 3f);
 
             // Display Full Combo/All Perfect text if appropriate
-            if (perfects == currentSong.beatmap.Length) {
+            if (perfects == currentPlayableDifficulty.beatmap.Length) {
                 spriteBatch.Draw(allPerfectResultTexture,
                     new Vector2(graphics.PreferredBackBufferHeight / (720f / 580), graphics.PreferredBackBufferHeight / (720f / 620) + graphics.PreferredBackBufferHeight / (720f / 7)),
                     null,
@@ -1248,7 +1274,7 @@ namespace SIFAC {
                     graphics.PreferredBackBufferHeight / 1800f,
                     SpriteEffects.None,
                     0f);
-            } else if (combo == currentSong.beatmap.Length) {
+            } else if (maxCombo == currentPlayableDifficulty.beatmap.Length) {
                 spriteBatch.Draw(fullComboResultTexture,
                     new Vector2(graphics.PreferredBackBufferHeight / (720f / 565), graphics.PreferredBackBufferHeight / (720f / 620) + graphics.PreferredBackBufferHeight / (720f / 7)),
                     null,
@@ -1392,7 +1418,7 @@ namespace SIFAC {
             int lane = note.lane;
 
             // First, calculate the X coordinates
-            float xCoord = 0;
+            float xCoord;
             float deltaX = 0;
             // Determine the delta X
             switch (lane) {
@@ -1473,7 +1499,7 @@ namespace SIFAC {
         /// <returns>The corresponding release note of the hold note.</returns>
         private Note GetReleaseNote(Note holdNote) {
             if (holdNote.isHold) {
-                foreach (Note note in currentSong.beatmap) {
+                foreach (Note note in currentSong.getDifficulty(currentDifficulty).beatmap) {
                     if (note.isRelease && note.lane == holdNote.lane && note.position > holdNote.position) {
                         return note;
                     }
@@ -1499,7 +1525,7 @@ namespace SIFAC {
                 currentAudioPosition = MediaPlayer.PlayPosition.TotalSeconds;
             }
 
-            foreach (Note note in currentSong.beatmap) {
+            foreach (Note note in currentSong.getDifficulty(currentDifficulty).beatmap) {
                 if (!note.hasResolved && ((down && !note.isRelease) || (!down && note.isRelease))) {
                     if (note.lane == lane && Math.Abs(note.position - currentAudioPosition) <= badTolerance) {
                         double diff = note.position - currentAudioPosition + timeOffset;
@@ -1700,151 +1726,201 @@ namespace SIFAC {
         public Texture2D coverArt;
         public Song music = null;
         public Video backgroundMv = null;
-        public Note[] beatmap;
+        public PlayableSongDifficulty[] difficulties = new PlayableSongDifficulty[8]; // 0-4 = Easy-Challenge, 5 = Combo, 6 = Plus, 7 = Switch
         public PlayableSongType type;
+
+        /// <summary>
+        /// Defines a PlayableSong with a background video, using the video's audio track as the beatmap's song source.
+        /// </summary>
+        /// <param name="title">The title of the song.</param>
+        /// <param name="coverArt">The cover art of the song.</param>
+        /// <param name="video">The video for the song.</param>
+        public PlayableSong(string title, Texture2D coverArt, Video video) {
+            this.title = title;
+            this.coverArt = coverArt;
+            backgroundMv = video;
+            type = PlayableSongType.Video;
+        }
+
+        /// <summary>
+        /// Defines a PlayableSong with no background video.
+        /// </summary>
+        /// <param name="title">The title of the song.</param>
+        /// <param name="coverArt">The cover art of the song.</param>
+        /// <param name="song">The song's audio file.</param>
+        public PlayableSong(string title, Texture2D coverArt, Song song) {
+            this.title = title;
+            this.coverArt = coverArt;
+            music = song;
+            type = PlayableSongType.Music;
+        }
+
+        /// <summary>
+        /// Defines and adds a playable difficulty beatmap with no time offset to this song.
+        /// </summary>
+        /// <param name="difficulty"></param>
+        /// <param name="beatmap"></param>
+        /// <param name="targetScores"></param>
+        public void addDifficulty(Difficulty difficulty, Note[] beatmap, int starDifficulty, int[] targetScores) {
+            PlayableSongDifficulty songDifficulty = new PlayableSongDifficulty(beatmap, starDifficulty, targetScores);
+
+            switch (difficulty){
+                case Difficulty.Easy:
+                    this.difficulties[0] = songDifficulty;
+                    break;
+                case Difficulty.Normal:
+                    this.difficulties[1] = songDifficulty;
+                    break;
+                case Difficulty.Hard:
+                    this.difficulties[2] = songDifficulty;
+                    break;
+                case Difficulty.Extreme:
+                    this.difficulties[3] = songDifficulty;
+                    break;
+                case Difficulty.Challenge:
+                    this.difficulties[4] = songDifficulty;
+                    break;
+                case Difficulty.Plus:
+                    this.difficulties[5] = songDifficulty;
+                    break;
+                case Difficulty.Combo:
+                    this.difficulties[6] = songDifficulty;
+                    break;
+                case Difficulty.Switch:
+                    this.difficulties[7] = songDifficulty;
+                    break;
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        /// <summary>
+        /// Defines and adds a playable difficulty beatmap with the specified time offset to this song.
+        /// </summary>
+        /// <param name="difficulty"></param>
+        /// <param name="beatmap"></param>
+        /// <param name="targetScores"></param>
+        /// <param name="offset"></param>
+        public void addDifficulty(Difficulty difficulty, Note[] beatmap, int starDifficulty, int[] targetScores, float offset) {
+            PlayableSongDifficulty songDifficulty = new PlayableSongDifficulty(beatmap, starDifficulty, targetScores, offset);
+
+            switch (difficulty) {
+                case Difficulty.Easy:
+                    this.difficulties[0] = songDifficulty;
+                    break;
+                case Difficulty.Normal:
+                    this.difficulties[1] = songDifficulty;
+                    break;
+                case Difficulty.Hard:
+                    this.difficulties[2] = songDifficulty;
+                    break;
+                case Difficulty.Extreme:
+                    this.difficulties[3] = songDifficulty;
+                    break;
+                case Difficulty.Challenge:
+                    this.difficulties[4] = songDifficulty;
+                    break;
+                case Difficulty.Plus:
+                    this.difficulties[5] = songDifficulty;
+                    break;
+                case Difficulty.Combo:
+                    this.difficulties[6] = songDifficulty;
+                    break;
+                case Difficulty.Switch:
+                    this.difficulties[7] = songDifficulty;
+                    break;
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        /// <summary>
+        /// Returns the PlayableSongDifficulty object for a given difficulty if it exists, or null otherwise.
+        /// </summary>
+        /// <param name="difficulty">The difficulty to be fetched.</param>
+        /// <returns>The PlayableSongDifficulty object for a given difficulty if it exists, or null otherwise.</returns>
+        public PlayableSongDifficulty getDifficulty(Difficulty difficulty) {
+            switch (difficulty) {
+                case Difficulty.Easy:
+                    return (this.difficulties[0]);
+                case Difficulty.Normal:
+                    return (this.difficulties[1]);
+                case Difficulty.Hard:
+                    return (this.difficulties[2]);
+                case Difficulty.Extreme:
+                    return (this.difficulties[3]);
+                case Difficulty.Challenge:
+                    return (this.difficulties[4]);
+                case Difficulty.Plus:
+                    return (this.difficulties[5]);
+                case Difficulty.Combo:
+                    return (this.difficulties[6]);
+                case Difficulty.Switch:
+                    return (this.difficulties[7]);
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Represents a difficulty for a PlayableSong.
+    /// </summary>
+    public class PlayableSongDifficulty {
+        public Note[] beatmap;
+        public int starDifficulty;
+        public int[] targetScores; // targetScores[0] is C score, 1 is B, 2 is A ... 5 is SSS
         public float beatmapTimeOffset; // Time offset of all notes in beatmap, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.
-        public int cScore;
-        public int bScore;
-        public int aScore;
-        public int sScore;
-        public int ssScore;
-        public int sssScore;
-        public int difficulty; // Challenge beatmap only. Will implement multi-difficulty later
 
         /// <summary>
-        /// Constructs a PlayableSong with a background video, using the video as the beatmap's song source.
+        /// Defines a PlayableSongDifficulty with no beatmap time offset.
         /// </summary>
-        /// <param name="title">The title of the song.</param>
-        /// <param name="cover">The cover art for the song.</param>
-        /// <param name="v">The background video for the song. The song will use the audio track from the video file for the song.</param>
-        /// <param name="map">The beatmap of the song.</param>
-        /// <param name="difficulty">The song's difficulty, in stars.</param>
-        /// <param name="cScore">The minimum score required for a C score rank.</param>
-        /// <param name="bScore">The minimum score required for a B score rank.</param>
-        /// <param name="aScore">The minimum score required for an A score rank.</param>
-        /// <param name="sScore">The minimum score required for an S score rank.</param>
-        /// <param name="ssScore">The minimum score required for an SS score rank.</param>
-        /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
-        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, int difficulty, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
-            this.title = title;
-            coverArt = cover;
-            backgroundMv = v;
-            beatmap = map;
-            type = PlayableSongType.Video;
-            this.difficulty = difficulty;
-            this.cScore = cScore;
-            this.bScore = bScore;
-            this.aScore = aScore;
-            this.sScore = sScore;
-            this.ssScore = ssScore;
-            this.sssScore = sssScore;
+        /// <param name="beatmap">The beatmap of note timing data.</param>
+        /// <param name="starDifficulty">The star difficulty of this beatmap.</param>
+        /// <param name="targetScores">The target scores for C, B, A, S, SS, and SSS, in that order in the array.</param>
+        public PlayableSongDifficulty(Note[] beatmap, int starDifficulty, int[] targetScores) {
+            this.beatmap = beatmap;
+            this.starDifficulty = starDifficulty;
+            this.targetScores = targetScores;
+            beatmapTimeOffset = 0;
         }
 
         /// <summary>
-        /// Constructs a PlayableSong with no background video.
+        /// Defines a PlayableSongDifficulty with a beatmap time offset.
         /// </summary>
-        /// <param name="title">The title of the song.</param>
-        /// <param name="cover">The cover art for the song.</param>
-        /// <param name="s">The audio for the song.</param>
-        /// <param name="map">The beatmap of the song.</param>
-        /// <param name="difficulty">The song's difficulty, in stars.</param>
-        /// <param name="cScore">The minimum score required for a C score rank.</param>
-        /// <param name="bScore">The minimum score required for a B score rank.</param>
-        /// <param name="aScore">The minimum score required for an A score rank.</param>
-        /// <param name="sScore">The minimum score required for an S score rank.</param>
-        /// <param name="ssScore">The minimum score required for an SS score rank.</param>
-        /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
-        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, int difficulty, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
-            this.title = title;
-            coverArt = cover;
-            music = s;
-            beatmap = map;
-            type = PlayableSongType.Music;
-            this.difficulty = difficulty;
-            this.cScore = cScore;
-            this.bScore = bScore;
-            this.aScore = aScore;
-            this.sScore = sScore;
-            this.ssScore = ssScore;
-            this.sssScore = sssScore;
-        }
-        /// <summary>
-        /// Constructs a PlayableSong with a time offset and a background video, using the video as the beatmap's song source.
-        /// </summary>
-        /// <param name="title">The title of the song.</param>
-        /// <param name="cover">The cover art for the song.</param>
-        /// <param name="v">The background video for the song. The song will use the audio track from the video file for the song.</param>
-        /// <param name="map">The beatmap of the song.</param>
-        /// <param name="difficulty">The song's difficulty, in stars.</param>
-        /// <param name="offset">The time offset, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.</param>
-        /// <param name="cScore">The minimum score required for a C score rank.</param>
-        /// <param name="bScore">The minimum score required for a B score rank.</param>
-        /// <param name="aScore">The minimum score required for an A score rank.</param>
-        /// <param name="sScore">The minimum score required for an S score rank.</param>
-        /// <param name="ssScore">The minimum score required for an SS score rank.</param>
-        /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
-        public PlayableSong(string title, Texture2D cover, Video v, Note[] map, int difficulty, float offset, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
-            this.title = title;
-            coverArt = cover;
-            backgroundMv = v;
-            beatmap = map;
-            type = PlayableSongType.Video;
-            this.difficulty = difficulty;
-            this.cScore = cScore;
-            this.bScore = bScore;
-            this.aScore = aScore;
-            this.sScore = sScore;
-            this.ssScore = ssScore;
-            this.sssScore = sssScore;
+        /// <param name="beatmap">The beatmap of note timing data.</param>
+        /// <param name="starDifficulty">The star difficulty of this beatmap.</param>
+        /// <param name="targetScores">The target scores for C, B, A, S, SS, and SSS, in that order in the array.</param>
+        /// <param name="beatmapTimeOffset">The time offset for the beatmap, in seconds. Corresponds to the number of seconds of silence in the beginning of the video before the song starts.</param>
+        public PlayableSongDifficulty(Note[] beatmap, int starDifficulty, int[] targetScores, float beatmapTimeOffset) {
+            this.beatmap = beatmap;
+            this.starDifficulty = starDifficulty;
+            this.targetScores = targetScores;
+            this.beatmapTimeOffset = beatmapTimeOffset;
 
-            foreach (Note note in beatmap) {
-                note.position += offset;
+            foreach (Note note in this.beatmap) {
+                note.position += beatmapTimeOffset;
                 if (note.isHold) {
-                    note.releaseNoteSpawnTime += offset;
+                    note.releaseNoteSpawnTime += beatmapTimeOffset;
                 } else if (note.isRelease) {
-                    note.parentNoteSpawnTime += offset;
+                    note.parentNoteSpawnTime += beatmapTimeOffset;
                 }
             }
         }
+    }
 
-        /// <summary>
-        /// Constructs a PlayableSong with a time offset and no background video.
-        /// </summary>
-        /// <param name="title">The title of the song.</param>
-        /// <param name="cover">The cover art for the song.</param>
-        /// <param name="s">The audio for the song.</param>
-        /// <param name="map">The beatmap of the song.</param>
-        /// <param name="difficulty">The song's difficulty, in stars.</param>
-        /// <param name="offset">The time offset, in seconds. Corresponds to the number of seconds of silence at the beginning of the video before the audio starts. Used for manually aligned audio/video tracks.</param>
-        /// <param name="cScore">The minimum score required for a C score rank.</param>
-        /// <param name="bScore">The minimum score required for a B score rank.</param>
-        /// <param name="aScore">The minimum score required for an A score rank.</param>
-        /// <param name="sScore">The minimum score required for an S score rank.</param>
-        /// <param name="ssScore">The minimum score required for an SS score rank.</param>
-        /// <param name="sssScore">The minimum score required for an SSS score rank.</param>
-        public PlayableSong(string title, Texture2D cover, Song s, Note[] map, int difficulty, float offset, int cScore, int bScore, int aScore, int sScore, int ssScore, int sssScore) {
-            this.title = title;
-            coverArt = cover;
-            music = s;
-            beatmap = map;
-            type = PlayableSongType.Music;
-            this.difficulty = difficulty;
-            this.cScore = cScore;
-            this.bScore = bScore;
-            this.aScore = aScore;
-            this.sScore = sScore;
-            this.ssScore = ssScore;
-            this.sssScore = sssScore;
-
-            foreach (Note note in beatmap) {
-                note.position += offset;
-                if (note.isHold) {
-                    note.releaseNoteSpawnTime += offset;
-                } else if (note.isRelease) {
-                    note.parentNoteSpawnTime += offset;
-                }
-            }
-        }
+    /// <summary>
+    /// The various beatmap difficulties and modes.
+    /// </summary>
+    public enum Difficulty {
+        Easy,
+        Normal,
+        Hard,
+        Extreme,
+        Challenge,
+        Plus,
+        Combo,
+        Switch
     }
 
     /// <summary>

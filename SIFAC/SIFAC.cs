@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework.Audio;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Xna.Framework.Content;
+using System.IO;
 
 namespace SIFAC {
     /// <summary>
@@ -105,7 +105,6 @@ namespace SIFAC {
         Texture2D starYellowTexture;
         Texture2D starOrangeTexture;
 
-
         /*GOODBYE SCREEN VARIABLES*/
 
         /* CONFIG VARIABLES */
@@ -137,6 +136,8 @@ namespace SIFAC {
 
         // Volume of note hit sound effect
         float noteHitVolume = 0.1f;
+
+        String beatmapDirectoryPath = @"C:\Users\darre\source\repos\SIFAC\SIFAC\Content\beatmap_assets\";
         /* END CONFIG */
 
         public SIFAC() {
@@ -282,6 +283,20 @@ namespace SIFAC {
 
             // TODO use a for loop of some sort to dynamically load all beatmaps
 
+            String[] beatmapDirectories = Directory.GetDirectories(beatmapDirectoryPath);
+
+            /*foreach (String paths in beatmapDirectories) {
+                String songName = paths.Split('\\').Last();
+                Video video = Content.Load<Video>("beatmap_assets/" + songName + "/video");
+                Texture2D cover = Content.Load<Texture2D>("beatmap_assets/" + songName + "/cover");
+                PlayableSong song = new PlayableSong(songName, cover, video);
+
+                Note[] beatmap = LoadBeatmap(paths + "\\beatmap_challenge.txt");   
+                song.addDifficulty(Difficulty.Challenge, beatmap, 14, new int[] { 40000, 70000, 90000, 100000, 150000, 250000 }, 11f / 30f);
+                songs.Add(song);
+
+            }*/
+
             // Load Believe Again
             Video video = Content.Load<Video>("beatmap_assets/Believe Again/video");
             Texture2D cover = Content.Load<Texture2D>("beatmap_assets/Believe Again/cover");
@@ -371,7 +386,12 @@ namespace SIFAC {
         }
 
         void UpdateTitleScreen(GameTime gameTime) {
-            
+            var kstate = Keyboard.GetState();
+            if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
+                currentGameState = GameState.NesicaCheckScreen;
+            }
+            previousState = kstate;
+
         }
 
         void UpdateNesicaCheckScreen(GameTime gameTime) {
@@ -423,7 +443,7 @@ namespace SIFAC {
             }
             if (kstate.IsKeyDown(Keys.Enter) & !previousState.IsKeyDown(Keys.Enter)) {
                 currentSong = menuChoices[highlightedMenuElement];
-                currentDifficulty = Difficulty.Easy; // TODO Add an option to select this in the menu
+                currentDifficulty = Difficulty.Challenge; // TODO Add an option to select this in the menu
                 if (currentSong.type == PlayableSongType.Music && MediaPlayer.State == MediaState.Stopped) {
                     MediaPlayer.Play(currentSong.music);
                 } else if (bgVideoPlayer.State == MediaState.Stopped) {
@@ -1297,12 +1317,12 @@ namespace SIFAC {
         }
 
         /// <summary>
-        /// Loads beatmap data from a txt file in CustomBeatmapFestival format into an array of Notes.
+        /// Loads beatmap data from a txt file in modified CustomBeatmapFestival format into an array of Notes.
         /// </summary>
         /// <param name="filepath">The path to the txt file.</param>
         /// <returns>An array of Notes in the beatmap.</returns>
         private Note[] LoadBeatmap(String filepath) {
-            string[] lines = System.IO.File.ReadAllLines(filepath);
+            string[] lines = File.ReadAllLines(filepath);
             Note[] beatmap = new Note[lines.Length];
             for (int i = 0; i < lines.Length; i++) {
                 string[] data = lines[i].Split('/');

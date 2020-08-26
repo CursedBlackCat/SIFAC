@@ -1,0 +1,10 @@
+StarDifficulties=0,0,0,0,14,0,0,0
+EasyTargetScores=0,0,0,0,0,0
+NormalTargetScores=0,0,0,0,0,0
+HardTargetScores=0,0,0,0,0,0
+ExtremeTargetScores=0,0,0,0,0,0
+ChallengeTargetScores=40000,70000,90000,100000,150000,250000
+PlusTargetScores=0,0,0,0,0,0
+ComboTargetScores=0,0,0,0,0,0
+SwitchTargetScores=0,0,0,0,0,0
+Offset=0.36666666666667
